@@ -3,8 +3,7 @@ engine.register_fn(
 	move |ctx_call: NativeCallContext, language: &str, queries: Array, rule: FnPtr| -> RhaiResult<INT> {
 		let mut query_list = Vec::new();
 		for item in queries {
-			let q = item.into_string()
-				.map_err(|_| "walk query list expects strings")?;
+			let q = item.into_string().map_err(|_| "walk query list expects strings")?;
 			if !q.trim().is_empty() {
 				query_list.push(q);
 			}
@@ -99,8 +98,7 @@ engine.register_fn(
 					}
 				}
 				let node_ref = ctx_walk_filtered.node_ref(*node, language);
-				rule.call_within_context(&ctx_call, (node_ref, child_docs))
-					.map_err(Box::<EvalAltResult>::from)?
+				rule.call_within_context(&ctx_call, (node_ref, child_docs)).map_err(Box::<EvalAltResult>::from)?
 			}
 			else {
 				ctx_walk_filtered.doc_range(node.start_byte(), node.end_byte()) as INT
@@ -108,7 +106,9 @@ engine.register_fn(
 			docs.borrow_mut().insert(key, doc_id);
 		}
 		let root_key = NodeKey::from_ts_node(nodes.last().unwrap());
-		let doc_id = *docs.borrow().get(&root_key).unwrap_or(&0);
+		let doc_id = *docs.borrow()
+			.get(&root_key)
+			.unwrap_or(&0);
 		ACTIVE_DOCS.with(
 			|cell| {
 				*cell.borrow_mut() = None;

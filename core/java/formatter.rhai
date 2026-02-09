@@ -1260,8 +1260,8 @@ fn doc_method_invocation(node, children) {
 	if children.len >= 4 && children.kind(1) == kinds::dot {
 		let receiver_text = slice(children.range(0));
 		let receiver_doc = doc_for_child_or_build(node, children, 0);
+		let node_children = node.children();
 		let name_text = {
-			let node_children = node.children();
 			let out = "";
 			let idx = 2;
 			while idx < args_idx {
@@ -1338,53 +1338,47 @@ fn doc_method_invocation(node, children) {
 		let base_wrap = false;
 		if chain_context {
 			let chain_text = slice(root_range);
-			let chain_first = first_line_text(chain_text);
-			let parent_text = if parent != () {
-				text(parent)
+			let chain_len = root.token_len();
+			let parent_len = if parent != () {
+				parent.token_len()
 			}
 			else {
 				()
 			};
-			let parent_first = if parent_text == () {
-				()
-			}
-			else {
-				first_line_text(parent_text)
-			};
-			let args_first = if args_idx >= 0 {
-				first_line_text(slice(children.range(args_idx)))
+			let args_len = if args_idx >= 0 {
+				node_children[args_idx].token_len()
 			}
 			else {
 				()
 			};
-			let args_too_long = args_first != () && args_first.len() > max_width;
+			let args_too_long = args_len != () && args_len > max_width;
 			let binary_node = if parent != () {
 				parent.ancestor([kinds::binary_expression], #{ self: true })
 			}
 			else {
 				()
 			};
-			let binary_first = if binary_node != () {
-				first_line_text(text(binary_node))
+			let binary_len = if binary_node != () {
+				binary_node.token_len()
 			}
 			else {
 				()
 			};
-			let binary_too_long = binary_first != () && binary_first.len() > max_width;
+			let binary_too_long = binary_len != () && binary_len > max_width;
 			let paren_node = if parent != () {
 				parent.ancestor([kinds::parenthesized_expression], #{ self: true })
 			}
 			else {
 				()
 			};
-			let paren_first = if paren_node != () {
-				first_line_text(text(paren_node))
+			let paren_len = if paren_node != () {
+				paren_node.token_len()
 			}
 			else {
 				()
 			};
-			let paren_too_long = paren_first != () && paren_first.len() > max_width;
-			base_wrap = chain_first.len() > max_width || ((chain_text.index_of("\n") >= 0 || chain_text.index_of("\r") >= 0) && chain_has_invocation) || (parent_first != () && parent_first.len() > max_width) || args_too_long || binary_too_long || paren_too_long;
+			let paren_too_long = paren_len != () && paren_len > max_width;
+			base_wrap = chain_len > max_width || ((chain_text.index_of("\n") >= 0 || chain_text.index_of("\r") >= 0) && chain_has_invocation) || (parent_len != () && parent_len > max_width) || args_too_long || binary_too_long || paren_too_long;
 		}
 		let chain_lambda = false;
 		let chain_has_class_body = false;
@@ -1846,8 +1840,7 @@ fn doc_formal_parameter(node, children) {
 				parts.push(doc_text(" "));
 			}
 		}
-		if node_children != () && i < node_children.len() && node_children[i] != () && node_children[i]
-			.kind_id() == kinds::generic_type {
+		if node_children != () && i < node_children.len() && node_children[i] != () && node_children[i].kind_id() == kinds::generic_type {
 			parts.push(doc_text(text_generic_type(node_children[i])));
 		}
 		else {
@@ -2301,8 +2294,7 @@ fn doc_local_variable_declaration(node, children) {
 		if need_space {
 			parts.push(doc_text(" "));
 		}
-		if node_children != () && i < node_children.len() && node_children[i] != () && node_children[i]
-			.kind_id() == kinds::generic_type {
+		if node_children != () && i < node_children.len() && node_children[i] != () && node_children[i].kind_id() == kinds::generic_type {
 			parts.push(doc_text(text_generic_type(node_children[i])));
 		}
 		else {
@@ -2338,8 +2330,7 @@ fn doc_field_or_variable_declaration(node, children) {
 		if need_space {
 			parts.push(doc_text(" "));
 		}
-		if node_children != () && i < node_children.len() && node_children[i] != () && node_children[i]
-			.kind_id() == kinds::generic_type {
+		if node_children != () && i < node_children.len() && node_children[i] != () && node_children[i].kind_id() == kinds::generic_type {
 			parts.push(doc_text(text_generic_type(node_children[i])));
 		}
 		else {
@@ -2851,8 +2842,7 @@ fn doc_method_like(node, children, body_capture) {
 				i += 1;
 			}
 			if annotation_docs.len() > 0 {
-				let rest_text = slice(range(end(byte_range(modifiers_node)), start(children.range(params_idx))))
-					.trim();
+				let rest_text = slice(range(end(byte_range(modifiers_node)), start(children.range(params_idx)))).trim();
 				let modifier_text = "";
 				let mi = 0;
 				while mi < modifier_words.len() {

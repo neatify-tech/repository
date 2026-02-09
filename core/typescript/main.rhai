@@ -334,8 +334,7 @@ fn chain_root(node) {
 
 fn chain_should_wrap(node) {
 	let root = chain_root(node);
-	let raw = text(root);
-	raw.len() > configuration::values
+	root.token_len() > configuration::values
 	["max_width"]
 }
 
@@ -1199,7 +1198,7 @@ fn doc_member_expression(node, children) {
 	let info = chain_root_info(node);
 	let root = info[0];
 	let saw_args = info[1];
-	let wrap_chain = text(root).len() > configuration::values["max_width"];
+	let wrap_chain = root.token_len() > configuration::values["max_width"];
 	let root_range = byte_range(root);
 	let receiver_range = children.range(receiver_idx);
 	let receiver_kind = children.kind(receiver_idx);

@@ -4,4 +4,5 @@ let out = source()
 	.group_by(|x| x % 2)
 	.map(|x| x * 2)
 	.reduce(|a, b| a + b)
-	.collect();
+	.collect()
+	.sum();

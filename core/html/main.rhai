@@ -490,7 +490,8 @@ let root_doc = walk(
 	queries,
 	|node, children| {
 		build_doc(node, children)
-	}
+	},
+	#{ rewrite: true }
 );
 let width = configuration::values["max_width"];
 let indent_style = configuration::values["indent_style"];

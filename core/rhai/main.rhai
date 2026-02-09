@@ -276,7 +276,8 @@ fn doc_chain_root(node, base_node, segments, force_break) {
 	}
 	let inline_doc = doc_concat_list(parts);
 	let max_width = configuration::values["max_width"];
-	if !force_break && chain_text.len() <= max_width {
+	let chain_len = node.token_len();
+	if !force_break && chain_len <= max_width {
 		return inline_doc;
 	}
 	let indent_size = configuration::values["tab_width"];
@@ -293,9 +294,9 @@ fn doc_chain_root(node, base_node, segments, force_break) {
 	])
 }
 
-fn doc_chain_root_with_base(base_doc, base_text, segments, force_break) {
+fn doc_chain_root_with_base(base_doc, base_len, segments, force_break) {
 	let max_width = configuration::values["max_width"];
-	if !force_break && base_text.len() <= max_width {
+	if !force_break && base_len <= max_width {
 		let parts = [base_doc];
 		let i = 0;
 		while i < segments.len() {
@@ -321,8 +322,7 @@ fn doc_chain_root_with_base(base_doc, base_text, segments, force_break) {
 fn should_break_chain_with_text(node) {
 	let max_width = configuration::values["max_width"];
 	// let chain_len = chain_text.len();
-	let node_range = node.range();
-	let chain_len = node_range.end() - node_range.start();
+	let chain_len = node.token_len();
 	if chain_len > max_width {
 		return true;
 	}
@@ -358,13 +358,7 @@ fn should_break_chain_with_text(node) {
 	let target_len = trace_call(
 		"doc_expr_chain::should_break::target_len",
 		|| {
-			let target_range = range(target);
-			if end(target_range) > start(target_range) {
-				end(target_range) - start(target_range)
-			}
-			else {
-				0
-			}
+			target.token_len()
 		}
 	);
 	if target_len > max_width {
@@ -1249,13 +1243,20 @@ fn doc_arg_list(node, children) {
 	let k_rparen = kinds::rparen;
 	let k_comma = kinds::comma;
 	let args = [];
+	let arg_is_comment = [];
+	let has_comment = false;
 	let first_kind = ();
 	let i = 0;
 	while i < children.len {
 		let k = children.kind(i);
 		if k != k_lparen && k != k_rparen && k != k_comma {
+			let is_comment = k == kinds::comment_line_doc || k == kinds::comment_block_doc;
 			args.push(doc_for_child(children, i));
-			if first_kind == () {
+			arg_is_comment.push(is_comment);
+			if is_comment {
+				has_comment = true;
+			}
+			if first_kind == () && !is_comment {
 				first_kind = k;
 			}
 		}
@@ -1267,20 +1268,39 @@ fn doc_arg_list(node, children) {
 	let raw = text(node);
 	let max_width = configuration::values["max_width"];
 	let should_break = raw.len() > max_width || raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0;
+	if has_comment {
+		should_break = true;
+	}
 	if should_break && args.len() == 1 && first_kind == kinds::ExprArray {
 		return doc_concat_list([doc_text("("), args[0], doc_text(")")]);
 	}
 	let parts = [];
+	let last_non_comment = -1;
+	let j = args.len() - 1;
+	while j >= 0 {
+		if !arg_is_comment[j] {
+			last_non_comment = j;
+			break;
+		}
+		if j == 0 {
+			break;
+		}
+		j -= 1;
+	}
 	let j = 0;
 	while j < args.len() {
 		parts.push(args[j]);
 		if j < args.len() - 1 {
 			if should_break {
-				parts.push(doc_text(","));
+				if !arg_is_comment[j] && j != last_non_comment {
+					parts.push(doc_text(","));
+				}
 				parts.push(doc_hardline());
 			}
 			else {
-				parts.push(doc_text(", "));
+				if !arg_is_comment[j] && j != last_non_comment {
+					parts.push(doc_text(", "));
+				}
 			}
 		}
 		j += 1;
@@ -1324,8 +1344,8 @@ fn doc_call_expression(node, children) {
 					let fn_doc = doc_for_child(children, fn_idx);
 					let args_doc = doc_for_child(children, args_idx);
 					let base_doc = doc_concat_list([fn_doc, args_doc]);
-					let base_text = slice(byte_range(node)).trim();
-					return doc_chain_root_with_base(base_doc, base_text, segments, true);
+					let base_len = node.token_len();
+					return doc_chain_root_with_base(base_doc, base_len, segments, true);
 				}
 			}
 			return doc_chain_root(node, parts[0], segments, true);

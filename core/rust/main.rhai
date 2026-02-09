@@ -2574,9 +2574,7 @@ fn doc_range_expression(children) {
 	doc_concat_list(parts)
 }
 
-fn doc_bracket_list(node, children, open_bracket, close_bracket) {
-	let k_open = kinds::map[open_bracket];
-	let k_close = kinds::map[close_bracket];
+fn doc_bracket_list(node, children, open_bracket, close_bracket, k_open, k_close) {
 	let k_comma = kinds::comma;
 	let items = [];
 	let i = 0;
@@ -2623,15 +2621,15 @@ fn doc_bracket_list(node, children, open_bracket, close_bracket) {
 }
 
 fn doc_array_expression(node, children) {
-	doc_bracket_list(node, children, "[", "]")
+	doc_bracket_list(node, children, "[", "]", kinds::lbracket, kinds::rbracket)
 }
 
 fn doc_tuple_expression(node, children) {
-	doc_bracket_list(node, children, "(", ")")
+	doc_bracket_list(node, children, "(", ")", kinds::lparen, kinds::rparen)
 }
 
 fn doc_tuple_pattern(node, children) {
-	doc_bracket_list(node, children, "(", ")")
+	doc_bracket_list(node, children, "(", ")", kinds::lparen, kinds::rparen)
 }
 
 fn doc_type_cast_expression(children) {
@@ -3750,9 +3748,7 @@ fn is_simple_identifier_kind(k) {
 }
 
 fn chain_should_wrap(node) {
-	let raw = text(node);
-	raw.len() > configuration::values
-	["max_width"]
+	node.token_len() > configuration::values["max_width"]
 }
 
 fn doc_chain_expression(root) {
@@ -3831,7 +3827,7 @@ fn doc_chain_expression(root) {
 		return base_doc;
 	}
 	segments.reverse();
-	let wrap = chain_should_wrap(root) || segments.len() >= 4;
+	let wrap = chain_should_wrap(root) || segments.len() >= 3;
 	if segments.len() == 0 {
 		return base_doc;
 	}
@@ -4273,7 +4269,8 @@ let queries = [
 ];
 let root_doc = walk(
 	"rust",
-	queries,
+	kinds::list,
+	// queries,
 	|node, children| {
 		build_doc(node, children)
 	}

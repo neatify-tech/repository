@@ -19,14 +19,15 @@ engine.register_fn(
 					child_docs.push(Dynamic::from(*id));
 				}
 			}
-			let doc_id: INT = rule.call_within_context(&ctx_call, (node.clone(), child_docs))
-				.map_err(Box::<EvalAltResult>::from)?;
+			let doc_id: INT = rule.call_within_context(&ctx_call, (node.clone(), child_docs)).map_err(Box::<EvalAltResult>::from)?;
 			let key = NodeKey::from_node(node);
 			docs.borrow_mut().insert(key, doc_id);
 		}
 		let root = nodes.last().unwrap();
 		let key = NodeKey::from_node(root);
-		let doc_id = *docs.borrow().get(&key).unwrap_or(&0);
+		let doc_id = *docs.borrow()
+			.get(&key)
+			.unwrap_or(&0);
 		ACTIVE_DOCS.with(
 			|cell| {
 				*cell.borrow_mut() = None;
