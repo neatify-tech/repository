@@ -654,12 +654,25 @@ fn doc_function_declaration(node, children) {
 	let k_identifier = kinds::identifier;
 	let k_params = kinds::formal_parameters;
 	let k_block = kinds::statement_block;
+	let k_function = kinds::kw_function;
+	let k_async = kinds::kw_async;
 	let name_doc = ();
 	let params_doc = ();
 	let block_doc = ();
+	let function_idx = -1;
+	let has_async = false;
 	let i = 0;
 	while i < children.len {
 		let k = children.kind(i);
+		let token_text = slice(children.range(i)).trim();
+		if function_idx < 0 {
+			if k == k_function || token_text == "function" {
+				function_idx = i;
+			}
+			else if k == k_async || token_text == "async" {
+				has_async = true;
+			}
+		}
 		if k == k_identifier && name_doc == () {
 			name_doc = doc_for_child(children, i);
 		}
@@ -674,10 +687,16 @@ fn doc_function_declaration(node, children) {
 	if params_doc == () || block_doc == () {
 		return doc_text(text(node));
 	}
-	if name_doc != () {
-		return doc_concat_list([doc_text("function "), name_doc, params_doc, doc_text(" "), block_doc]);
+	let prefix = if has_async {
+		"async "
 	}
-	doc_concat_list([doc_text("function"), params_doc, doc_text(" "), block_doc])
+	else {
+		""
+	};
+	if name_doc != () {
+		return doc_concat_list([doc_text(prefix + "function "), name_doc, params_doc, doc_text(" "), block_doc]);
+	}
+	doc_concat_list([doc_text(prefix + "function"), params_doc, doc_text(" "), block_doc])
 }
 
 fn doc_if_statement(node, children) {

@@ -111,6 +111,7 @@ const KIND_PAIRS = [
 	["throw", false],
 	["try", false],
 	["catch", false],
+	["async", false],
 	["function", false],
 	["const", false],
 	["let", false],
@@ -239,6 +240,7 @@ export const kw_continue = kind_id("typescript", "continue", false);
 export const kw_throw = kind_id("typescript", "throw", false);
 export const kw_try = kind_id("typescript", "try", false);
 export const kw_catch = kind_id("typescript", "catch", false);
+export const kw_async = kind_id("typescript", "async", false);
 export const kw_function = kind_id("typescript", "function", false);
 export const kw_const = kind_id("typescript", "const", false);
 export const kw_let = kind_id("typescript", "let", false);
