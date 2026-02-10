@@ -2,8 +2,9 @@ name: Sync tree-sitter binaries
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "15 3 * * *"
+  release:
+    types:
+      - published
 
 permissions:
   contents: write
@@ -39,9 +40,7 @@ jobs:
             [[ -z "$repo" ]] && continue
             repo_name="${repo##*/}"
             gh release download -R "$repo" -p "tree-sitter-*" -D "$temp_dir/$repo_name" --clobber
-          done <<'EOF'
-${TREESITTER_REPOS}
-EOF
+          done <<<"$TREESITTER_REPOS"
           shopt -s nullglob
           for asset in "$temp_dir"/*/tree-sitter-*; do
             base="$(basename "$asset")"
