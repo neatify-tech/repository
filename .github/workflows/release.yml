@@ -1,4 +1,4 @@
-name: Sync tree-sitter binaries
+name: Release repository
 
 on:
   workflow_dispatch:
