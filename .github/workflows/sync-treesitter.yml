@@ -65,16 +65,21 @@ jobs:
           unzip -o "$temp_dir"/neatify-linux-x86_64.zip -d "$temp_dir"
           chmod +x "$temp_dir/neatify"
           "$temp_dir/neatify" --generate-manifest
-      - name: Commit updates
+      - name: Package artifacts
+        if: ${{ github.event_name == 'release' }}
         shell: bash
         run: |
           set -euo pipefail
-          git add core/treesitter manifest.toml
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -m "Update tree-sitter binaries and manifest"
-          git push
+          tag_name="${GITHUB_REF_NAME}"
+          package_name="neatify-repository-${tag_name}.zip"
+          zip -r "$package_name" core/treesitter manifest.toml
+      - name: Upload release asset
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_name="${GITHUB_REF_NAME}"
+          package_name="neatify-repository-${tag_name}.zip"
+          gh release upload "$tag_name" "$package_name" --clobber
