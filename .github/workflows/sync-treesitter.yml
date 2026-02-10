@@ -61,8 +61,8 @@ jobs:
         run: |
           set -euo pipefail
           temp_dir="$(mktemp -d)"
-          gh release download -R "$NEATIFY_REPO" -p "neatify-*-linux-x86_64.zip" -D "$temp_dir" --clobber
-          unzip -o "$temp_dir"/neatify-*-linux-x86_64.zip -d "$temp_dir"
+          gh release download -R "$NEATIFY_REPO" -p "neatify-linux-x86_64.zip" -D "$temp_dir" --clobber
+          unzip -o "$temp_dir"/neatify-linux-x86_64.zip -d "$temp_dir"
           chmod +x "$temp_dir/neatify"
           "$temp_dir/neatify" --generate-manifest
       - name: Commit updates
