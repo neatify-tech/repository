@@ -75,7 +75,7 @@ jobs:
           set -euo pipefail
           tag_name="${GITHUB_REF_NAME}"
           package_name="neatify-repository-${tag_name}.zip"
-          zip -r "$package_name" . -x ".git/*" "$package_name"
+          zip -r "$package_name" . -x ".git/*" ".github/**" ".gitignore" "$package_name"
       - name: Upload release asset
         if: ${{ github.event_name == 'release' }}
         env:
