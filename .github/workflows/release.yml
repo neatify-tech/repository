@@ -62,8 +62,10 @@ jobs:
         run: |
           set -euo pipefail
           temp_dir="$(mktemp -d)"
-          gh release download -R "$NEATIFY_REPO" -p "neatify-linux-x86_64.zip" -D "$temp_dir" --clobber
-          unzip -o "$temp_dir"/neatify-linux-x86_64.zip -d "$temp_dir"
+          latest_tag="$(gh release view -R "$NEATIFY_REPO" --json tagName -q .tagName)"
+          archive_name="neatify-${latest_tag}-linux-x86_64.tar.gz"
+          gh release download -R "$NEATIFY_REPO" -p "$archive_name" -D "$temp_dir" --clobber
+          tar -xzf "$temp_dir/$archive_name" -C "$temp_dir"
           chmod +x "$temp_dir/neatify"
           "$temp_dir/neatify" --generate-manifest
       - name: Package artifacts
