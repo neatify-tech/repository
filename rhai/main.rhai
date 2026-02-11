@@ -1,8 +1,8 @@
 // Doc-first formatter entrypoint for Rhai.
-import "core/rhai/kinds.rhai" as kinds;
-import "core/rhai/configuration.rhai" as configuration;
-import "core/shared/whitespace.rhai" as whitespace;
-import "core/shared/comments.rhai" as comments;
+import "rhai/kinds.rhai" as kinds;
+import "rhai/configuration.rhai" as configuration;
+import "shared/whitespace.rhai" as whitespace;
+import "shared/comments.rhai" as comments;
 
 fn doc_concat_list(docs) {
 	if docs.len() == 0 {

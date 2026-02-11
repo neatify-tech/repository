@@ -1,9 +1,9 @@
 // Doc-first formatter entrypoint for Rust.
 // No source mutations are performed outside of Doc rendering.
-import "core/rust/kinds.rhai" as kinds;
-import "core/rust/configuration.rhai" as configuration;
-import "core/shared/whitespace.rhai" as whitespace;
-import "core/shared/comments.rhai" as comments;
+import "rust/kinds.rhai" as kinds;
+import "rust/configuration.rhai" as configuration;
+import "shared/whitespace.rhai" as whitespace;
+import "shared/comments.rhai" as comments;
 
 fn doc_empty() {
 	doc_text("")

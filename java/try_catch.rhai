@@ -1,7 +1,7 @@
 // Try / catch / resources formatting.
-import "core/java/kinds.rhai" as kinds;
-import "core/java/configuration.rhai" as configuration;
-import "core/java/whitespace.rhai" as whitespace;
+import "java/kinds.rhai" as kinds;
+import "java/configuration.rhai" as configuration;
+import "java/whitespace.rhai" as whitespace;
 
 fn normalize_resource_piece(text) {
 	let normalized = whitespace::normalize_inline_ws(text);

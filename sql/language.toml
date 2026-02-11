@@ -1,6 +1,6 @@
 name = "sql"
 version = "0.1.0"
-formatter = "core/sql/main.rhai"
+formatter = "sql/main.rhai"
 
 # Grammar source: https://github.com/m-novikov/tree-sitter-sql
 # Grammar tag: none
@@ -10,4 +10,4 @@ extensions = [".sql"]
 
 [treesitter]
 language = "sql"
-binary = "core/treesitter/{os}/{arch}/sql.{ext}"
+binary = "treesitter/{os}/{arch}/sql.{ext}"

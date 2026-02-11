@@ -1,7 +1,7 @@
 // Doc-first formatter entrypoint for Vue.
-import "core/vue/kinds.rhai" as kinds;
-import "core/vue/configuration.rhai" as configuration;
-import "core/shared/whitespace.rhai" as whitespace;
+import "vue/kinds.rhai" as kinds;
+import "vue/configuration.rhai" as configuration;
+import "shared/whitespace.rhai" as whitespace;
 
 fn doc_concat_list(docs) {
 	if docs.len() == 0 {

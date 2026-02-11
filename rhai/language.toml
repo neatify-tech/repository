@@ -1,6 +1,6 @@
 name = "rhai"
 version = "0.1.0"
-formatter = "core/rhai/main.rhai"
+formatter = "rhai/main.rhai"
 fragment-marker = "/* {marker} */"
 
 # Grammar source: forked from https://github.com/elkowar/tree-sitter-rhai (local patch in grammar/tree-sitter-rhai)
@@ -11,4 +11,4 @@ extensions = [".rhai"]
 
 [treesitter]
 language = "rhai"
-binary = "core/treesitter/{os}/{arch}/rhai.{ext}"
+binary = "treesitter/{os}/{arch}/rhai.{ext}"

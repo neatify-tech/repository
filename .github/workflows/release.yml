@@ -50,7 +50,7 @@ jobs:
               os="${BASH_REMATCH[2]}"
               arch="${BASH_REMATCH[3]}"
               ext="${BASH_REMATCH[4]}"
-              dest="core/treesitter/${os}/${arch}"
+              dest="treesitter/${os}/${arch}"
               mkdir -p "$dest"
               cp "$asset" "$dest/${lang}.${ext}"
             fi

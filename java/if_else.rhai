@@ -1,6 +1,6 @@
 // If / else-if / else formatting.
-import "core/java/kinds.rhai" as kinds;
-import "core/java/configuration.rhai" as configuration;
+import "java/kinds.rhai" as kinds;
+import "java/configuration.rhai" as configuration;
 
 fn doc_if_statement(node, children) {
 	let k_paren_expr = kinds::parenthesized_expression;

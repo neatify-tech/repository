@@ -1,7 +1,7 @@
 // Switch formatting.
-import "core/java/kinds.rhai" as kinds;
-import "core/java/comment_helpers.rhai" as comment_helpers;
-import "core/java/configuration.rhai" as configuration;
+import "java/kinds.rhai" as kinds;
+import "java/comment_helpers.rhai" as comment_helpers;
+import "java/configuration.rhai" as configuration;
 
 fn doc_switch_statement(node, children) {
 	let k_switch_block = kinds::switch_block;

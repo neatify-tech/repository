@@ -1,7 +1,7 @@
 // Doc-first formatter entrypoint for JSON.
-import "core/json/kinds.rhai" as kinds;
-import "core/json/configuration.rhai" as configuration;
-import "core/shared/whitespace.rhai" as whitespace;
+import "json/kinds.rhai" as kinds;
+import "json/configuration.rhai" as configuration;
+import "shared/whitespace.rhai" as whitespace;
 
 fn doc_concat_list(docs) {
 	if docs.len() == 0 {

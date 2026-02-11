@@ -1,6 +1,6 @@
 // Whitespace and indentation helpers.
-import "core/shared/whitespace.rhai" as shared_ws;
-import "core/java/configuration.rhai" as configuration;
+import "shared/whitespace.rhai" as shared_ws;
+import "java/configuration.rhai" as configuration;
 
 fn normalize_varargs(text) {
 	shared_ws::normalize_varargs(text)

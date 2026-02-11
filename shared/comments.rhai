@@ -1,5 +1,5 @@
 // Comment formatting helpers (shared).
-import "core/shared/whitespace.rhai" as shared_ws;
+import "shared/whitespace.rhai" as shared_ws;
 fn strip_incidental_ws_block_comment(text) {
 	let lines = text.split("\n");
 	if lines.len() == 0 {

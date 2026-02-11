@@ -1,14 +1,14 @@
 // Doc-first formatter entrypoint for Java.
 // No source mutations are performed outside of Doc rendering.
-import "core/java/kinds.rhai" as kinds;
-import "core/java/if_else.rhai" as if_else;
-import "core/java/try_catch.rhai" as try_catch;
-import "core/java/loop_sync.rhai" as loop_sync;
-import "core/java/switch.rhai" as switch_fmt;
-import "core/java/comment_helpers.rhai" as comment_helpers;
-import "core/java/configuration.rhai" as configuration;
-import "core/java/whitespace.rhai" as whitespace;
-import "core/java/comments.rhai" as comments;
+import "java/kinds.rhai" as kinds;
+import "java/if_else.rhai" as if_else;
+import "java/try_catch.rhai" as try_catch;
+import "java/loop_sync.rhai" as loop_sync;
+import "java/switch.rhai" as switch_fmt;
+import "java/comment_helpers.rhai" as comment_helpers;
+import "java/configuration.rhai" as configuration;
+import "java/whitespace.rhai" as whitespace;
+import "java/comments.rhai" as comments;
 
 fn doc_empty() {
 	doc_text("")

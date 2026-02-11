@@ -1,5 +1,5 @@
 // Comment formatting helpers.
-import "core/shared/comments.rhai" as shared_comments;
+import "shared/comments.rhai" as shared_comments;
 fn strip_incidental_ws_block_comment(text) {
 	shared_comments::strip_incidental_ws_block_comment(text)
 }

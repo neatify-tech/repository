@@ -1,6 +1,6 @@
 name = "css"
 version = "0.1.0"
-formatter = "core/css/main.rhai"
+formatter = "css/main.rhai"
 # Grammar source: https://github.com/tree-sitter/tree-sitter-css
 # Grammar tag: v0.25.0
 # Grammar commit: dda5cfc
@@ -10,4 +10,4 @@ extensions = [".css"]
 
 [treesitter]
 language = "css"
-binary = "core/treesitter/{os}/{arch}/css.{ext}"
+binary = "treesitter/{os}/{arch}/css.{ext}"

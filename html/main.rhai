@@ -1,7 +1,7 @@
 // Doc-first formatter entrypoint for HTML.
-import "core/html/kinds.rhai" as kinds;
-import "core/html/configuration.rhai" as configuration;
-import "core/shared/whitespace.rhai" as whitespace;
+import "html/kinds.rhai" as kinds;
+import "html/configuration.rhai" as configuration;
+import "shared/whitespace.rhai" as whitespace;
 
 fn doc_concat_list(docs) {
 	if docs.len() == 0 {

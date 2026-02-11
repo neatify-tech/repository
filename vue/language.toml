@@ -1,6 +1,6 @@
 name = "vue"
 version = "0.1.0"
-formatter = "core/vue/main.rhai"
+formatter = "vue/main.rhai"
 fragment-marker = "<!-- {marker} -->"
 
 # Grammar source: forked from https://github.com/ikatyang/tree-sitter-vue (local patch in grammar/tree-sitter-vue)
@@ -11,4 +11,4 @@ extensions = [".vue"]
 
 [treesitter]
 language = "vue"
-binary = "core/treesitter/{os}/{arch}/vue.{ext}"
+binary = "treesitter/{os}/{arch}/vue.{ext}"

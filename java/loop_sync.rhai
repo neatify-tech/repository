@@ -1,6 +1,6 @@
 // Loop and synchronized formatting.
-import "core/java/kinds.rhai" as kinds;
-import "core/java/whitespace.rhai" as whitespace;
+import "java/kinds.rhai" as kinds;
+import "java/whitespace.rhai" as whitespace;
 
 fn doc_for_statement(node, children) {
 	let k_for = kinds::kw_for;

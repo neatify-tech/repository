@@ -1,5 +1,5 @@
 // Shared helpers for inline comments between headers and blocks.
-import "core/shared/comments.rhai" as comments;
+import "shared/comments.rhai" as comments;
 fn inline_comment_doc_from_gap(gap, line_prefix, block_start, block_end) {
 	let line_idx = if line_prefix.is_empty() {
 		-1

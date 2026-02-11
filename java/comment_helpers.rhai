@@ -1,6 +1,6 @@
 // Shared helpers for inline comments between headers and blocks.
-import "core/shared/comment_helpers.rhai" as shared_helpers;
-import "core/java/comments.rhai" as comments;
+import "shared/comment_helpers.rhai" as shared_helpers;
+import "java/comments.rhai" as comments;
 
 fn inline_comment_doc_from_gap(gap) {
 	shared_helpers::inline_comment_doc_from_gap(gap, "//", "/*", "*/")

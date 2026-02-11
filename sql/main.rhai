@@ -1,7 +1,7 @@
 // Doc-first formatter entrypoint for SQL.
-import "core/sql/kinds.rhai" as kinds;
-import "core/sql/configuration.rhai" as configuration;
-import "core/shared/whitespace.rhai" as whitespace;
+import "sql/kinds.rhai" as kinds;
+import "sql/configuration.rhai" as configuration;
+import "shared/whitespace.rhai" as whitespace;
 
 fn doc_concat_list(docs) {
 	if docs.len() == 0 {

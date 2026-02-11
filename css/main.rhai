@@ -1,7 +1,7 @@
 // Doc-first formatter entrypoint for CSS.
-import "core/css/kinds.rhai" as kinds;
-import "core/css/configuration.rhai" as configuration;
-import "core/shared/whitespace.rhai" as whitespace;
+import "css/kinds.rhai" as kinds;
+import "css/configuration.rhai" as configuration;
+import "shared/whitespace.rhai" as whitespace;
 
 fn doc_concat_list(docs) {
 	if docs.len() == 0 {

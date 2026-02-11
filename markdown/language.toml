@@ -1,6 +1,6 @@
 name = "markdown"
 version = "0.1.0"
-formatter = "core/markdown/main.rhai"
+formatter = "markdown/main.rhai"
 
 # Grammar source: https://github.com/MDeiml/tree-sitter-markdown
 # Grammar tag: none
@@ -10,4 +10,4 @@ extensions = [".md", ".markdown"]
 
 [treesitter]
 language = "markdown"
-binary = "core/treesitter/{os}/{arch}/markdown.{ext}"
+binary = "treesitter/{os}/{arch}/markdown.{ext}"
