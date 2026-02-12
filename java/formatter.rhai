@@ -1538,17 +1538,41 @@ fn doc_argument_list(node, children) {
 }
 
 fn doc_element_value_pair(node, children) {
-	doc_text(normalize_element_value_pair_text(text(node)))
-}
-
-fn normalize_element_value_pair_text(raw) {
-	let idx = raw.index_of("=");
-	if idx < 0 {
-		return raw.trim();
+	if children == () || children.len == 0 {
+		return doc_text(text(node));
 	}
-	let left = raw.sub_string(0, idx).trim();
-	let right = raw.sub_string(idx + 1, raw.len() - idx - 1).trim();
-	left + " = " + right
+	let eq_idx = -1;
+	let i = 0;
+	while i < children.len {
+		if children.kind(i) == kinds::assign {
+			eq_idx = i;
+			break;
+		}
+		i += 1;
+	}
+	if eq_idx < 0 {
+		return doc_text(text(node));
+	}
+	let left_parts = [];
+	let right_parts = [];
+	i = 0;
+	while i < eq_idx {
+		left_parts.push(doc_for_child(children, i));
+		i += 1;
+	}
+	i = eq_idx + 1;
+	while i < children.len {
+		right_parts.push(doc_for_child(children, i));
+		i += 1;
+	}
+	if left_parts.len() == 0 || right_parts.len() == 0 {
+		return doc_text(text(node));
+	}
+	doc_concat_list([
+		doc_concat_list(left_parts),
+		doc_text(" = "),
+		doc_concat_list(right_parts)
+	])
 }
 
 fn doc_annotation_argument_list(node, force_break) {
@@ -1564,7 +1588,14 @@ fn doc_annotation_argument_list(node, force_break) {
 			let k = child.kind_id();
 			if k != k_lparen && k != k_rparen && k != k_comma {
 				if k == kinds::element_value_pair {
-					args.push(doc_text(normalize_element_value_pair_text(text(child))));
+					let doc = doc_for_node(child);
+					if doc != () {
+						args.push(doc);
+					}
+					else {
+						let r = byte_range(child);
+						args.push(doc_range(start(r), end(r)));
+					}
 				}
 				else {
 					let doc = doc_for_node(child);
