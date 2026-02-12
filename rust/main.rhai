@@ -1087,41 +1087,24 @@ fn doc_expression_statement(children) {
 }
 
 fn doc_if_expression(node, children) {
-	let k_block = kinds::block;
-	let k_else = kinds::else_clause;
-	let block_idx = -1;
-	let else_idx = -1;
-	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
-		if k == k_block && block_idx < 0 {
-			block_idx = i;
-		}
-		else if k == k_else {
-			else_idx = i;
-		}
-		i += 1;
-	}
-	if block_idx < 0 {
+	let hits = node.find(
+		[
+			#{ kind_id: kinds::block },
+			#{ kind_id: kinds::else_clause },
+			#{ exclude_kind_id: [kinds::kw_if], before_kind_id: kinds::block }
+			// default mode is "first"
+		]
+	);
+	let block_node = hits[0];
+	let else_node = hits[1];
+	let cond_node = hits[2];
+	if block_node == () || cond_node == () {
 		return doc_text(text(node));
 	}
-	let cond_idx = -1;
-	i = 0;
-	while i < block_idx {
-		let k = children.kind(i);
-		if k != kinds::kw_if {
-			cond_idx = i;
-			break;
-		}
-		i += 1;
-	}
-	if cond_idx < 0 {
-		return doc_text(text(node));
-	}
-	let block_doc = doc_for_child(children, block_idx);
-	let cond_doc = doc_for_child(children, cond_idx);
-	if else_idx >= 0 {
-		let else_doc = doc_for_child(children, else_idx);
+	let block_doc = doc_for_node_or_range(block_node);
+	let cond_doc = doc_for_node_or_range(cond_node);
+	if else_node != () {
+		let else_doc = doc_for_node_or_range(else_node);
 		return doc_concat_list(
 			[
 				doc_text("if "),
