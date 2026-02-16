@@ -6,11 +6,9 @@ engine.register_fn(
 			return Ok(0);
 		}
 		let docs: Rc<RefCell<HashMap<NodeKey, INT>>> = Rc::new(RefCell::new(HashMap::new()));
-		ACTIVE_DOCS.with(
-			|cell| {
-				*cell.borrow_mut() = Some(docs.clone());
-			}
-		);
+		ACTIVE_DOCS.with(|cell| {
+			*cell.borrow_mut() = Some(docs.clone());
+		});
 		for node in nodes.iter() {
 			let mut child_docs = Array::new();
 			for child in node.children() {
@@ -28,11 +26,9 @@ engine.register_fn(
 		let doc_id = *docs.borrow()
 			.get(&key)
 			.unwrap_or(&0);
-		ACTIVE_DOCS.with(
-			|cell| {
-				*cell.borrow_mut() = None;
-			}
-		);
+		ACTIVE_DOCS.with(|cell| {
+			*cell.borrow_mut() = None;
+		});
 		Ok(doc_id)
 	}
 );

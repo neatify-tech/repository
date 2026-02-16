@@ -585,7 +585,8 @@ fn doc_arguments(node, children) {
 	}
 	let raw = text(node);
 	let max_width = configuration::values["max_width"];
-	let should_break = raw.len() > max_width || raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0;
+	let wrap_min = configuration::values["wrap_call_args_min_count"];
+	let should_break = token_len(node) > max_width || args.len() >= wrap_min;
 	let force_break = if args.len() == 1 {
 		count_chain_segments_in_text(raw) >= 4
 	}
@@ -661,6 +662,8 @@ fn doc_parameters(node, children) {
 	let raw = text(node);
 	let max_width = configuration::values["max_width"];
 	let should_break = raw.len() > max_width || raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0;
+	let wrap_min = configuration::values["wrap_call_args_min_count"];
+	let should_break = should_break || params.len() >= wrap_min;
 	let parts = [];
 	let j = 0;
 	while j < params.len() {

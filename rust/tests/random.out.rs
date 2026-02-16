@@ -22,18 +22,14 @@ fn discover_tests_from_fs(
 					continue;
 				}
 				let expected_rel = rel.replace(&in_suffix, &format!(".out{ext}"));
-				let expected = set.get(&expected_rel).ok_or_else(
-					|| {
-						format!("missing expected test file: {expected_rel}")
-					}
-				)?;
+				let expected = set.get(&expected_rel).ok_or_else(|| {
+					format!("missing expected test file: {expected_rel}")
+				})?;
 				let expected = set.get(&expected_rel)
-					.ok_or_else(
-						|| {
-							log("do this");
-							format!("missing expected test file: {expected_rel}")
-						}
-					)?;
+					.ok_or_else(|| {
+						log("do this");
+						format!("missing expected test file: {expected_rel}")
+					})?;
 				let name = rel.clone();
 				tests.push(
 					TestCase {

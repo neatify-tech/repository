@@ -88,7 +88,12 @@ async fn execute_tool(
 					max_bytes: config.search_max_bytes,
 					summary_top: config.search_summary_top
 				};
-				fs::rg_search(&root_path, &root_label, pattern, options).await
+				fs::rg_search(
+					&root_path,
+					&root_label,
+					pattern,
+					options
+				).await
 			}
 		).await,
 		"find_files" => run_tool(
@@ -166,7 +171,12 @@ async fn execute_tool(
 				else {
 					fs::normalize_relative(root_param)
 				};
-				fs::find(&root_path, &root_label, pattern, options).await
+				fs::find(
+					&root_path,
+					&root_label,
+					pattern,
+					options
+				).await
 			}
 		).await,
 		"read_file" => run_tool(
@@ -205,7 +215,13 @@ async fn execute_tool(
 				let max_line = config.read_max_line_bytes.unwrap_or(usize::MAX);
 				if highlight {
 					let raw = tokio::fs::read_to_string(&resolved).await.map_err(|err| format_io_error("read", &rel_path, err.into()))?;
-					let (lines, count, total, truncated, truncated_reason, long_lines) = fs::format_line_slices(&raw, start_line, limit, max_total, max_line);
+					let (lines, count, total, truncated, truncated_reason, long_lines) = fs::format_line_slices(
+						&raw,
+						start_line,
+						limit,
+						max_total,
+						max_line
+					);
 					let line_truncated = start_line.saturating_sub(1) + count < total;
 					let truncated = truncated || line_truncated;
 					let mut rows = String::new();
@@ -231,32 +247,29 @@ async fn execute_tool(
 					obj.insert("start_line".to_string(), Value::Number(start_line.into()));
 					obj.insert("truncated".to_string(), Value::Bool(truncated));
 					if count == 0 && start_line > total && total > 0 {
-						obj.insert(
-							"code".to_string(),
-							Value::String("EMPTY_RANGE".to_string())
-						);
+						obj.insert("code".to_string(), Value::String("EMPTY_RANGE".to_string()));
 					}
 					if truncated {
 						if let Some(reason) = truncated_reason {
 							obj.insert("truncated_reason".to_string(), Value::Array(reason));
 						}
 						else if line_truncated {
-							obj.insert(
-								"truncated_reason".to_string(),
-								Value::Array(vec![Value::String("line_limit".to_string())])
-							);
+							obj.insert("truncated_reason".to_string(), Value::Array(vec![Value::String("line_limit".to_string())]));
 						}
 					}
 					if long_lines {
-						obj.insert(
-							"code".to_string(),
-							Value::String("TRUNCATED_LONG_LINES".to_string())
-						);
+						obj.insert("code".to_string(), Value::String("TRUNCATED_LONG_LINES".to_string()));
 					}
 					Ok(Value::Object(obj))
 				}
 				else {
-					let data = fs::read_file(&resolved, start_line, limit, max_total, max_line).await.map_err(|err| format_io_error("read", &rel_path, err))?;
+					let data = fs::read_file(
+						&resolved,
+						start_line,
+						limit,
+						max_total,
+						max_line
+					).await.map_err(|err| format_io_error("read", &rel_path, err))?;
 					Ok(
 						json!({
 							"path": rel_path,
@@ -310,12 +323,10 @@ async fn execute_tool(
 								requested_scopes.push(requested_scope_for_path("read", path, config));
 							}
 							let rel_path = relative_to_root(&config.root, &PathBuf::from(path));
-							files.push(
-								json!({
-									"path": rel_path,
-									"code": "INVALID_PATH"
-								})
-							);
+							files.push(json!({
+								"path": rel_path,
+								"code": "INVALID_PATH"
+							}));
 							continue;
 						}
 					};
@@ -329,10 +340,7 @@ async fn execute_tool(
 							entry.insert("total".to_string(), Value::Number(total.into()));
 							entry.insert("truncated".to_string(), Value::Bool(truncated));
 							if long_lines {
-								entry.insert(
-									"code".to_string(),
-									Value::String("TRUNCATED_LONG_LINES".to_string())
-								);
+								entry.insert("code".to_string(), Value::String("TRUNCATED_LONG_LINES".to_string()));
 							}
 							files.push(Value::Object(entry));
 						}
@@ -351,21 +359,17 @@ async fn execute_tool(
 							else {
 								"EXECUTION_ERROR"
 							};
-							files.push(
-								json!({
-									"path": rel_path,
-									"code": code
-								})
-							);
+							files.push(json!({
+								"path": rel_path,
+								"code": code
+							}));
 						}
 					}
 				}
 				if !requested_scopes.is_empty() && !config.allow_escape {
-					return Err(
-						RequestedScopeError {
-							scopes: requested_scopes
-						}.into()
-					);
+					return Err(RequestedScopeError {
+						scopes: requested_scopes
+					}.into());
 				}
 				Ok(json!({
 					"files": files
@@ -500,7 +504,12 @@ async fn execute_tool(
 						}
 					)?;
 				let rel_path = relative_to_root(&config.root, &resolved);
-				let data = fs::write_file(&resolved, content, mode, apply).await.map_err(|err| format_io_error("write", &rel_path, err))?;
+				let data = fs::write_file(
+					&resolved,
+					content,
+					mode,
+					apply
+				).await.map_err(|err| format_io_error("write", &rel_path, err))?;
 				let mut structured = json!({
 					"path": rel_path
 				});
@@ -513,7 +522,12 @@ async fn execute_tool(
 						.unwrap_or("");
 					let edit_id = uuid::Uuid::new_v4().to_string();
 					let review_uri = format!("ui://write_file/{}", edit_id);
-					let html = render_diff_html(before, after, &rel_path, &review_uri);
+					let html = render_diff_html(
+						before,
+						after,
+						&rel_path,
+						&review_uri
+					);
 					let entry = PreviewEntry {
 						uri: review_uri,
 						html,
