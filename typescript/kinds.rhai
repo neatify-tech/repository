@@ -35,6 +35,7 @@ const KIND_PAIRS = [
 	["array", true],
 	["object", true],
 	["pair", true],
+	["shorthand_property_identifier", true],
 	["type_alias_declaration", true],
 	["type_identifier", true],
 	["object_type", true],
@@ -172,6 +173,7 @@ export const parenthesized_expression = kind_id("typescript", "parenthesized_exp
 export const array = kind_id("typescript", "array", true);
 export const object = kind_id("typescript", "object", true);
 export const pair = kind_id("typescript", "pair", true);
+export const shorthand_property_identifier = kind_id("typescript", "shorthand_property_identifier", true);
 export const type_alias_declaration = kind_id("typescript", "type_alias_declaration", true);
 export const type_identifier = kind_id("typescript", "type_identifier", true);
 export const object_type = kind_id("typescript", "object_type", true);

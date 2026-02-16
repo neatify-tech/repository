@@ -173,7 +173,7 @@
 	}
 	async function callTool(name: string, argumentsParam: Record<string, unknown> = {}, meta?: Record<string, unknown>) {
 		const call = ensureMcp();
-		const payload: { name: string; arguments?: Record<string, unknown>; _meta?: Record<string, unknown> } = { arguments: argumentsParam };
+		const payload: { name: string; arguments?: Record<string, unknown>; _meta?: Record<string, unknown> } = { name, arguments: argumentsParam };
 		if (meta) {
 			payload._meta = meta;
 		}
@@ -203,7 +203,7 @@
 			const key = `${path}|${isDir ? "dir" : "file"}`;
 			const existing = nodes.get(key);
 			if (existing) return existing;
-			const node: TreeNode = { children: [], expanded: expanded.has(path) };
+			const node: TreeNode = { name, path, isDir, children: [], expanded: expanded.has(path) };
 			nodes.set(key, node);
 			return node;
 		};
@@ -271,7 +271,7 @@
 			node.children.forEach(walk);
 		};
 		nodes.forEach(walk);
-		return {};
+		return { files, dirs };
 	}
 	function updateVisibility() {
 		if (!filterActive.value) {
@@ -496,3 +496,4 @@
 		}
 	);
 </script>
+

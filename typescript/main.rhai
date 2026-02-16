@@ -1905,7 +1905,8 @@ fn doc_object_expression(children) {
 	let field_texts = [];
 	let i = 0;
 	while i < children.len {
-		if children.kind(i) == kinds::pair {
+		let k = children.kind(i);
+		if k == kinds::pair || k == kinds::shorthand_property_identifier {
 			fields.push(doc_for_child(children, i));
 			field_texts.push(slice(children.range(i)).trim());
 		}
@@ -1983,6 +1984,7 @@ fn doc_object_type(children) {
 		return doc_text("{}");
 	}
 	let max_width = configuration::values["max_width"];
+	let force_multiline = fields.len() >= 3;
 	let inline_len = {
 		let len = 2;
 		let j = 0;
@@ -2005,7 +2007,7 @@ fn doc_object_type(children) {
 		j += 1;
 	}
 	let inline_doc = doc_concat_list([doc_text("{ "), doc_concat_list(parts), doc_text(" }")]);
-	if inline_len <= max_width {
+	if !force_multiline && inline_len <= max_width {
 		return inline_doc;
 	}
 	let indent_size = configuration::values["tab_width"];
@@ -2167,6 +2169,9 @@ fn build_doc(node, children) {
 	if k == kinds::pair {
 		return doc_object_field(children);
 	}
+	if k == kinds::shorthand_property_identifier {
+		return doc_text(text(node));
+	}
 	if k == kinds::property_signature {
 		return doc_property_signature(children);
 	}
@@ -2225,6 +2230,7 @@ let queries = [
 	"(array) @n",
 	"(object) @n",
 	"(pair) @n",
+	"(shorthand_property_identifier) @n",
 	"(type_identifier) @n",
 	"(type_annotation) @n",
 	"(predefined_type) @n",
