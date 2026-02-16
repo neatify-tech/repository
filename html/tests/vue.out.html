@@ -1,0 +1,9 @@
+<select v-model="currentRoot" @change="handleRootChange">
+	<option
+		v-for="root in roots"
+		:key="root.path"
+		:value="root.path">
+		{{ root.path }}
+	</option>
+</select>
+

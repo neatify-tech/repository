@@ -13,6 +13,30 @@ fn doc_concat_list(docs) {
 	doc_concat(docs)
 }
 
+fn doc_from_lines(text) {
+	let lines = text.split("\n");
+	if lines.len() == 0 {
+		return doc_text("");
+	}
+	let parts = [];
+	let i = 0;
+	while i < lines.len() {
+		let line = lines[i];
+		if line.len() > 0 {
+			let last = line.sub_string(line.len() - 1, 1);
+			if last == "\r" {
+				line = line.sub_string(0, line.len() - 1);
+			}
+		}
+		parts.push(doc_text(line));
+		if i < lines.len() - 1 {
+			parts.push(doc_hardline());
+		}
+		i += 1;
+	}
+	doc_concat_list(parts)
+}
+
 fn doc_for_child(children, idx) {
 	let d = children.doc(idx);
 	if d == () {
@@ -406,10 +430,23 @@ fn doc_script_style(node, children, language) {
 	if raw_doc == () {
 		raw_doc = doc_range(start(raw_range), end(raw_range));
 	}
+	let raw_text = slice(raw_range);
+	let width = configuration::values["max_width"];
+	let indent_style = configuration::values["indent_style"];
+	let tab_width = configuration::values["tab_width"];
+	let formatted = doc_render_with_indent(raw_doc, width, indent_style, tab_width);
+	let trimmed = trim(formatted);
+	if trimmed == "" {
+		return doc_concat_list([start_doc, end_doc]);
+	}
+	if raw_text.index_of("\n") < 0 && raw_text.index_of("\r") < 0 && trimmed.index_of("\n") < 0 && trimmed.index_of("\r") < 0 {
+		return doc_concat_list([start_doc, doc_text(trimmed), end_doc]);
+	}
+	let formatted_doc = doc_from_lines(trimmed);
 	let indent_size = configuration::values["tab_width"];
 	doc_concat_list([
 		start_doc,
-		doc_indent(indent_size, doc_concat_list([doc_hardline(), raw_doc])),
+		doc_indent(indent_size, doc_concat_list([doc_hardline(), formatted_doc])),
 		doc_hardline(),
 		end_doc
 	])
