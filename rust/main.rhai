@@ -2428,9 +2428,14 @@ fn doc_loop_expression(node, children) {
 
 fn doc_block_with_keyword(node, children, keyword) {
 	let block_idx = -1;
+	let has_move = false;
 	let i = 0;
 	while i < children.len {
-		if children.kind(i) == kinds::block {
+		let k = children.kind(i);
+		if k == kinds::kw_move {
+			has_move = true;
+		}
+		if k == kinds::block {
 			block_idx = i;
 			break;
 		}
@@ -2439,13 +2444,19 @@ fn doc_block_with_keyword(node, children, keyword) {
 	if block_idx < 0 {
 		return doc_text(text(node));
 	}
+	let keyword_text = if has_move {
+		keyword + " move"
+	}
+	else {
+		keyword
+	};
 	let block_range = children.range(block_idx);
 	let inline = inline_block_expression_doc(block_range);
 	if inline != () {
-		return doc_concat_list([doc_text(keyword), doc_text(" { "), inline, doc_text(" }")]);
+		return doc_concat_list([doc_text(keyword_text), doc_text(" { "), inline, doc_text(" }")]);
 	}
 	let block_doc = doc_for_child(children, block_idx);
-	doc_concat_list([doc_text(keyword), doc_text(" "), block_doc])
+	doc_concat_list([doc_text(keyword_text), doc_text(" "), block_doc])
 }
 
 fn doc_break_expression(children) {
@@ -3283,6 +3294,10 @@ fn inline_block_expression_doc(block_range) {
 		if p == () || p.kind_id() != kinds::block {
 			continue;
 		}
+		let p_range = byte_range(p);
+		if start(p_range) != start(block_range) || end(p_range) != end(block_range) {
+			continue;
+		}
 		let kids = children(rnode);
 		if kids.len() == 0 {
 			continue;
@@ -3326,6 +3341,10 @@ fn inline_block_expression_doc(block_range) {
 		}
 		let p = u.parent();
 		if p == () || p.kind_id() != kinds::block {
+			continue;
+		}
+		let p_range = byte_range(p);
+		if start(p_range) != start(block_range) || end(p_range) != end(block_range) {
 			continue;
 		}
 		let kids = children(u);
@@ -3373,6 +3392,10 @@ fn inline_block_expression_doc(block_range) {
 		if p == () || p.kind_id() != kinds::block {
 			continue;
 		}
+		let p_range = byte_range(p);
+		if start(p_range) != start(block_range) || end(p_range) != end(block_range) {
+			continue;
+		}
 		let kids = children(b);
 		if kids.len() == 0 {
 			continue;
@@ -3405,6 +3428,10 @@ fn inline_block_expression_doc(block_range) {
 		}
 		let p = cnode.parent();
 		if p == () || p.kind_id() != kinds::block {
+			continue;
+		}
+		let p_range = byte_range(p);
+		if start(p_range) != start(block_range) || end(p_range) != end(block_range) {
 			continue;
 		}
 		let kids = children(cnode);
@@ -3441,6 +3468,10 @@ fn inline_block_expression_doc(block_range) {
 		if p == () || p.kind_id() != kinds::block {
 			continue;
 		}
+		let p_range = byte_range(p);
+		if start(p_range) != start(block_range) || end(p_range) != end(block_range) {
+			continue;
+		}
 		let kids = children(fnode);
 		if kids.len() == 0 {
 			continue;
@@ -3473,6 +3504,10 @@ fn inline_block_expression_doc(block_range) {
 		}
 		let p = e.parent();
 		if p == () || p.kind_id() != kinds::block {
+			continue;
+		}
+		let p_range = byte_range(p);
+		if start(p_range) != start(block_range) || end(p_range) != end(block_range) {
 			continue;
 		}
 		let r = byte_range(e);
