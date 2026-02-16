@@ -1,0 +1,6 @@
+header.diff-header h1 {
+	font-size: var(--mcp-text-l, 1.125rem);
+	line-height: var(--mcp-leading-tight, 1.2);
+	font-weight: var(--mcp-weight-bold, 700);
+	margin: 0;
+}

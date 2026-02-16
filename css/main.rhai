@@ -121,7 +121,10 @@ fn normalize_css_text(text, space_after_colon, space_after_comma, space_before_p
 		}
 		if pending_space {
 			if out.len() > 0 {
-				out = out + " ";
+				let last = out.sub_string(out.len() - 1, 1);
+				if last != " " && last != "\t" {
+					out = out + " ";
+				}
 			}
 			pending_space = false;
 		}
