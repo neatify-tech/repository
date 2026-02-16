@@ -58,6 +58,11 @@ fn doc_attribute(children) {
 	doc_concat_list([name_doc, doc_text("="), value_doc])
 }
 
+fn doc_directive_attribute(node) {
+	let r = byte_range(node);
+	doc_range(start(r), end(r))
+}
+
 fn doc_tag_name(children) {
 	let k_tag_name = kinds::tag_name;
 	let i = 0;
@@ -450,6 +455,9 @@ fn build_doc(node, children) {
 		return doc_text_node(node);
 	}
 	if k == kinds::attribute || k == kinds::directive_attribute {
+		if k == kinds::directive_attribute {
+			return doc_directive_attribute(node);
+		}
 		return doc_attribute(children);
 	}
 	let r = byte_range(node);

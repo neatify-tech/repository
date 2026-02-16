@@ -35,6 +35,12 @@ const KIND_PAIRS = [
 	["array", true],
 	["object", true],
 	["pair", true],
+	["type_alias_declaration", true],
+	["type_identifier", true],
+	["object_type", true],
+	["property_signature", true],
+	["type_annotation", true],
+	["predefined_type", true],
 	["ternary_expression", true],
 	["identifier", true],
 	["property_identifier", true],
@@ -166,6 +172,12 @@ export const parenthesized_expression = kind_id("typescript", "parenthesized_exp
 export const array = kind_id("typescript", "array", true);
 export const object = kind_id("typescript", "object", true);
 export const pair = kind_id("typescript", "pair", true);
+export const type_alias_declaration = kind_id("typescript", "type_alias_declaration", true);
+export const type_identifier = kind_id("typescript", "type_identifier", true);
+export const object_type = kind_id("typescript", "object_type", true);
+export const property_signature = kind_id("typescript", "property_signature", true);
+export const type_annotation = kind_id("typescript", "type_annotation", true);
+export const predefined_type = kind_id("typescript", "predefined_type", true);
 export const ternary_expression = kind_id("typescript", "ternary_expression", true);
 export const identifier = kind_id("typescript", "identifier", true);
 export const property_identifier = kind_id("typescript", "property_identifier", true);

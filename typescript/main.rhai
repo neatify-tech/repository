@@ -1958,6 +1958,95 @@ fn doc_object_expression(children) {
 	])
 }
 
+fn doc_property_signature(children) {
+	let parts = [];
+	let i = 0;
+	while i < children.len {
+		parts.push(doc_for_child(children, i));
+		i += 1;
+	}
+	doc_concat_list(parts)
+}
+
+fn doc_object_type(children) {
+	let fields = [];
+	let field_texts = [];
+	let i = 0;
+	while i < children.len {
+		if children.kind(i) == kinds::property_signature {
+			fields.push(doc_for_child(children, i));
+			field_texts.push(slice(children.range(i)).trim());
+		}
+		i += 1;
+	}
+	if fields.len() == 0 {
+		return doc_text("{}");
+	}
+	let max_width = configuration::values["max_width"];
+	let inline_len = {
+		let len = 2;
+		let j = 0;
+		while j < field_texts.len() {
+			len += field_texts[j].len();
+			if j < fields.len() - 1 {
+				len += 2;
+			}
+			j += 1;
+		}
+		len
+	};
+	let parts = [];
+	let j = 0;
+	while j < fields.len() {
+		parts.push(fields[j]);
+		if j < fields.len() - 1 {
+			parts.push(doc_text("; "));
+		}
+		j += 1;
+	}
+	let inline_doc = doc_concat_list([doc_text("{ "), doc_concat_list(parts), doc_text(" }")]);
+	if inline_len <= max_width {
+		return inline_doc;
+	}
+	let indent_size = configuration::values["tab_width"];
+	let inner = [];
+	j = 0;
+	while j < fields.len() {
+		inner.push(doc_concat_list([fields[j], doc_text(";")]));
+		if j < fields.len() - 1 {
+			inner.push(doc_hardline());
+		}
+		j += 1;
+	}
+	doc_concat_list([
+		doc_text("{"),
+		doc_indent(indent_size, doc_concat_list([doc_hardline(), doc_concat_list(inner)])),
+		doc_hardline(),
+		doc_text("}")
+	])
+}
+
+fn doc_type_alias_declaration(node, children) {
+	let obj_idx = -1;
+	let i = 0;
+	while i < children.len {
+		if children.kind(i) == kinds::object_type {
+			obj_idx = i;
+			break;
+		}
+		i += 1;
+	}
+	if obj_idx < 0 {
+		return doc_text(text(node));
+	}
+	let obj_range = children.range(obj_idx);
+	let node_range = byte_range(node);
+	let prefix = doc_range(start(node_range), start(obj_range));
+	let suffix = doc_range(end(obj_range), end(node_range));
+	let obj_doc = doc_for_child(children, obj_idx);
+	doc_concat_list([prefix, obj_doc, suffix])
+}
+
 fn build_doc(node, children) {
 	let k = node.kind_id();
 	if k == kinds::program {
@@ -2072,8 +2161,17 @@ fn build_doc(node, children) {
 	if k == kinds::object {
 		return doc_object_expression(children);
 	}
+	if k == kinds::object_type {
+		return doc_object_type(children);
+	}
 	if k == kinds::pair {
 		return doc_object_field(children);
+	}
+	if k == kinds::property_signature {
+		return doc_property_signature(children);
+	}
+	if k == kinds::type_alias_declaration {
+		return doc_type_alias_declaration(node, children);
 	}
 	if k == kinds::string || k == kinds::template_string {
 		if k == kinds::string {
@@ -2111,6 +2209,9 @@ let queries = [
 	"(switch_case) @n",
 	"(switch_default) @n",
 	"(ternary_expression) @n",
+	"(type_alias_declaration) @n",
+	"(object_type) @n",
+	"(property_signature) @n",
 	"(arrow_function) @n",
 	"(call_expression) @n",
 	"(member_expression) @n",
@@ -2124,6 +2225,9 @@ let queries = [
 	"(array) @n",
 	"(object) @n",
 	"(pair) @n",
+	"(type_identifier) @n",
+	"(type_annotation) @n",
+	"(predefined_type) @n",
 	"(string) @n",
 	"(template_string) @n",
 	"(number) @n",
