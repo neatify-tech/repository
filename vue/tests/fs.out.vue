@@ -12,9 +12,7 @@
 						<option
 							v-for="root in roots"
 							:key="root.path"
-							:value="root.path">
-							{{ root.path }}
-						</option>
+							:value="root.path">{{ root.path }}</option>
 					</select>
 				</label>
 				<div class="field search-field">
@@ -52,13 +50,9 @@
 			<div class="status">
 				<span v-if="loading">Loading tree…</span>
 				<span v-else-if="error">{{ error }}</span>
-				<span v-else>
-					{{ treeSummary }}
-				</span>
+				<span v-else>{{ treeSummary }}</span>
 			</div>
-			<div class="status" v-if="query">
-				{{ searchSummary }}
-			</div>
+			<div class="status" v-if="query">{{ searchSummary }}</div>
 		</div>
 		<main class="workspace">
 			<section class="pane pane-tree">
@@ -93,18 +87,14 @@
 							class="copy"
 							type="button"
 							:disabled="!selectedPath || previewLoading"
-							@click="copyToClipboard">
-							{{ copyLabel }}
-						</button>
+							@click="copyToClipboard">{{ copyLabel }}</button>
 					</div>
 				</div>
 				<div class="pane-body">
 					<div v-if="!selectedPath" class="empty">
 						Select a file to view highlighted content.
 					</div>
-					<div v-else-if="previewError" class="empty">
-						{{ previewError }}
-					</div>
+					<div v-else-if="previewError" class="empty">{{ previewError }}</div>
 					<div v-else-if="previewLoading" class="empty">
 						Loading file…
 					</div>

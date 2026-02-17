@@ -6,3 +6,6 @@
 		:key="lineIndex"
 		:class="line.className">{{ line.text }}</span>
 </pre>
+<pre
+	v-else-if="!shouldShowIframeForTab(toolResponseTab) && activeContentText(toolResponseTab)"
+	class="content-text">{{ activeContentText(toolResponseTab) }}</pre>

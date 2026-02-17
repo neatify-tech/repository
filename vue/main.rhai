@@ -320,6 +320,57 @@ fn doc_element(node, children) {
 		let inline_allowed = inline_kind == k_text || inline_kind == k_raw || inline_kind == kinds::interpolation || ((inline_kind == k_element || inline_kind == k_component || inline_kind == k_template) && inline_container_tag(tag_name));
 		inline_ok = content.len() == 1 && inline_allowed && no_newlines && fits;
 	}
+	let simple_inline = false;
+	if !inline_ok {
+		let all_simple = content.len() > 0;
+		let j = 0;
+		while j < content.len() {
+			let idx = content[j];
+			let k = children.kind(idx);
+			if k != k_text && k != k_raw && k != kinds::interpolation {
+				all_simple = false;
+				break;
+			}
+			let r = children.range(idx);
+			let raw = slice(r);
+			if raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0 {
+				all_simple = false;
+				break;
+			}
+			j += 1;
+		}
+		simple_inline = all_simple;
+	}
+	if content.len() == 1 {
+		let idx = content[0];
+		let k = children.kind(idx);
+		if k == k_text || k == k_raw || k == kinds::interpolation {
+			let r = children.range(idx);
+			let raw = slice(r);
+			if raw.index_of("\n") < 0 && raw.index_of("\r") < 0 {
+				return doc_concat_list([start_doc, doc_range(start(r), end(r)), end_doc]);
+			}
+		}
+	}
+	if simple_inline {
+		let inline_docs = [];
+		let j = 0;
+		let prev_range = ();
+		while j < content.len() {
+			let idx = content[j];
+			let r = children.range(idx);
+			if prev_range != () {
+				let gap = slice(range(end(prev_range), start(r)));
+				if gap.len() > 0 && trim(gap) == "" {
+					inline_docs.push(doc_text(" "));
+				}
+			}
+			inline_docs.push(doc_range(start(r), end(r)));
+			prev_range = r;
+			j += 1;
+		}
+		return doc_concat_list([start_doc, doc_concat_list(inline_docs), end_doc]);
+	}
 	if inline_ok {
 		if content.len() == 1 {
 			let inner_doc = doc_for_child(children, content[0]);
