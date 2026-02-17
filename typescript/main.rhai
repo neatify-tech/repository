@@ -2059,7 +2059,7 @@ fn doc_object_expression(children) {
 	let i = 0;
 	while i < children.len {
 		let k = children.kind(i);
-		if k == kinds::pair || k == kinds::shorthand_property_identifier {
+		if k == kinds::pair || k == kinds::shorthand_property_identifier || k == kinds::spread_element {
 			fields.push(doc_for_child(children, i));
 			field_texts.push(slice(children.range(i)).trim());
 		}
@@ -2322,6 +2322,10 @@ fn build_doc(node, children) {
 	if k == kinds::pair {
 		return doc_object_field(children);
 	}
+	if k == kinds::spread_element {
+		let raw = text(node);
+		return doc_text(raw);
+	}
 	if k == kinds::shorthand_property_identifier {
 		return doc_text(text(node));
 	}
@@ -2384,6 +2388,7 @@ let queries = [
 	"(object) @n",
 	"(pair) @n",
 	"(shorthand_property_identifier) @n",
+	"(spread_element) @n",
 	"(type_identifier) @n",
 	"(type_annotation) @n",
 	"(predefined_type) @n",
