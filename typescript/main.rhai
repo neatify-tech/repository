@@ -733,6 +733,112 @@ fn doc_function_declaration(node, children) {
 	doc_concat_list(parts)
 }
 
+fn doc_method_definition(node, children) {
+	let k_params = kinds::formal_parameters;
+	let k_block = kinds::statement_block;
+	let k_type_annotation = kinds::type_annotation;
+	let params_idx = -1;
+	let block_idx = -1;
+	let i = 0;
+	while i < children.len {
+		let k = children.kind(i);
+		if k == k_params {
+			params_idx = i;
+		}
+		else if k == k_block {
+			block_idx = i;
+			break;
+		}
+		i += 1;
+	}
+	if params_idx < 0 || block_idx < 0 {
+		return doc_text(text(node));
+	}
+	let header = slice(range(start(byte_range(node)), start(children.range(params_idx)))).trim();
+	let params_doc = doc_for_child_or_build(node, children, params_idx);
+	let block_doc = doc_for_child_or_build(node, children, block_idx);
+	let return_doc = ();
+	let params_range = children.range(params_idx);
+	let block_range = children.range(block_idx);
+	let j = 0;
+	while j < children.len {
+		let k = children.kind(j);
+		if k == k_type_annotation {
+			let r = children.range(j);
+			if start(r) >= end(params_range) && start(r) < start(block_range) {
+				return_doc = doc_for_child(children, j);
+				break;
+			}
+		}
+		j += 1;
+	}
+	let parts = [];
+	if header != "" {
+		parts.push(doc_text(header));
+	}
+	if params_doc != () {
+		parts.push(params_doc);
+	}
+	if return_doc != () {
+		parts.push(return_doc);
+	}
+	parts.push(doc_text(" "));
+	parts.push(block_doc);
+	doc_concat_list(parts)
+}
+
+fn doc_class_body(node, children) {
+	let k_lbrace = kinds::lbrace;
+	let k_rbrace = kinds::rbrace;
+	let content = [];
+	let i = 0;
+	while i < children.len {
+		let k = children.kind(i);
+		if k != k_lbrace && k != k_rbrace {
+			content.push(i);
+		}
+		i += 1;
+	}
+	if content.len() == 0 {
+		return doc_text("{}");
+	}
+	let inner_docs = [];
+	let j = 0;
+	while j < content.len() {
+		inner_docs.push(doc_for_child(children, content[j]));
+		if j < content.len() - 1 {
+			inner_docs.push(doc_hardline());
+		}
+		j += 1;
+	}
+	let indent_size = configuration::values["tab_width"];
+	doc_concat_list([
+		doc_text("{"),
+		doc_indent(indent_size, doc_concat_list([doc_hardline(), doc_concat_list(inner_docs)])),
+		doc_hardline(),
+		doc_text("}")
+	])
+}
+
+fn doc_class_declaration(node, children) {
+	let k_body = kinds::class_body;
+	let body_idx = -1;
+	let i = 0;
+	while i < children.len {
+		if children.kind(i) == k_body {
+			body_idx = i;
+			break;
+		}
+		i += 1;
+	}
+	if body_idx < 0 {
+		return doc_text(text(node));
+	}
+	let header = slice(range(start(byte_range(node)), start(children.range(body_idx)))).trim();
+	let body_doc = doc_for_child_or_build(node, children, body_idx);
+	doc_concat_list([doc_text(header), doc_text(" "), body_doc])
+}
+
 fn doc_if_statement(node, children) {
 	let block_idx = -1;
 	let else_idx = -1;
@@ -1932,9 +2038,18 @@ fn doc_unary_expression(children) {
 		if k == kinds::plus || k == kinds::minus || k == kinds::bang {
 			parts.push(doc_text(slice(children.range(i)).trim()));
 		}
-		else if k == kinds::kw_typeof {
-			parts.push(doc_text("typeof "));
-		}
+	else if k == kinds::kw_typeof {
+		parts.push(doc_text("typeof "));
+	}
+	else if k == kinds::kw_void {
+		parts.push(doc_text("void "));
+	}
+	else if k == kinds::kw_delete {
+		parts.push(doc_text("delete "));
+	}
+	else if k == kinds::kw_await {
+		parts.push(doc_text("await "));
+	}
 		else {
 			parts.push(doc_for_child(children, i));
 		}
@@ -1999,6 +2114,23 @@ fn doc_parenthesized_expression(node, children) {
 		i += 1;
 	}
 	doc_concat_list([doc_text("("), doc_concat_list(parts), doc_text(")")])
+}
+
+fn doc_await_expression(children) {
+	let expr_doc = ();
+	let i = 0;
+	while i < children.len {
+		let k = children.kind(i);
+		if k != kinds::kw_await {
+			expr_doc = doc_for_child(children, i);
+			break;
+		}
+		i += 1;
+	}
+	if expr_doc == () {
+		expr_doc = doc_text("");
+	}
+	doc_concat_list([doc_text("await "), expr_doc])
 }
 
 fn doc_arrow_function(node, children) {
@@ -2314,6 +2446,15 @@ fn build_doc(node, children) {
 	if k == kinds::function_declaration {
 		return doc_function_declaration(node, children);
 	}
+	if k == kinds::method_definition {
+		return doc_method_definition(node, children);
+	}
+	if k == kinds::class_body {
+		return doc_class_body(node, children);
+	}
+	if k == kinds::class_declaration {
+		return doc_class_declaration(node, children);
+	}
 	if k == kinds::variable_declarator {
 		return doc_variable_declarator(node, children);
 	}
@@ -2340,6 +2481,9 @@ fn build_doc(node, children) {
 	}
 	if k == kinds::parenthesized_expression {
 		return doc_parenthesized_expression(node, children);
+	}
+	if k == kinds::await_expression {
+		return doc_await_expression(children);
 	}
 	if k == kinds::arrow_function {
 		return doc_arrow_function(node, children);
@@ -2391,6 +2535,9 @@ let queries = [
 	"(lexical_declaration) @n",
 	"(variable_declaration) @n",
 	"(function_declaration) @n",
+	"(class_declaration) @n",
+	"(class_body) @n",
+	"(method_definition) @n",
 	"(variable_declarator) @n",
 	"(if_statement) @n",
 	"(for_statement) @n",
@@ -2417,6 +2564,7 @@ let queries = [
 	"(assignment_expression) @n",
 	"(unary_expression) @n",
 	"(update_expression) @n",
+	"(await_expression) @n",
 	"(parenthesized_expression) @n",
 	"(array) @n",
 	"(object) @n",

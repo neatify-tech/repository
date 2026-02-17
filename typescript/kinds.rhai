@@ -24,6 +24,9 @@ const KIND_PAIRS = [
 	["function_declaration", true],
 	["arrow_function", true],
 	["call_expression", true],
+	["class_declaration", true],
+	["class_body", true],
+	["method_definition", true],
 	["member_expression", true],
 	["arguments", true],
 	["formal_parameters", true],
@@ -31,6 +34,7 @@ const KIND_PAIRS = [
 	["assignment_expression", true],
 	["update_expression", true],
 	["unary_expression", true],
+	["await_expression", true],
 	["parenthesized_expression", true],
 	["array", true],
 	["object", true],
@@ -110,6 +114,9 @@ const KIND_PAIRS = [
 	["of", false],
 	["instanceof", false],
 	["typeof", false],
+	["void", false],
+	["delete", false],
+	["await", false],
 	["while", false],
 	["do", false],
 	["switch", false],
@@ -165,6 +172,9 @@ export const finally_clause = kind_id("typescript", "finally_clause", true);
 export const function_declaration = kind_id("typescript", "function_declaration", true);
 export const arrow_function = kind_id("typescript", "arrow_function", true);
 export const call_expression = kind_id("typescript", "call_expression", true);
+export const class_declaration = kind_id("typescript", "class_declaration", true);
+export const class_body = kind_id("typescript", "class_body", true);
+export const method_definition = kind_id("typescript", "method_definition", true);
 export const member_expression = kind_id("typescript", "member_expression", true);
 export const arguments = kind_id("typescript", "arguments", true);
 export const formal_parameters = kind_id("typescript", "formal_parameters", true);
@@ -172,6 +182,7 @@ export const binary_expression = kind_id("typescript", "binary_expression", true
 export const assignment_expression = kind_id("typescript", "assignment_expression", true);
 export const update_expression = kind_id("typescript", "update_expression", true);
 export const unary_expression = kind_id("typescript", "unary_expression", true);
+export const await_expression = kind_id("typescript", "await_expression", true);
 export const parenthesized_expression = kind_id("typescript", "parenthesized_expression", true);
 export const array = kind_id("typescript", "array", true);
 export const object = kind_id("typescript", "object", true);
@@ -251,6 +262,9 @@ export const kw_in = kind_id("typescript", "in", false);
 export const kw_of = kind_id("typescript", "of", false);
 export const kw_instanceof = kind_id("typescript", "instanceof", false);
 export const kw_typeof = kind_id("typescript", "typeof", false);
+export const kw_void = kind_id("typescript", "void", false);
+export const kw_delete = kind_id("typescript", "delete", false);
+export const kw_await = kind_id("typescript", "await", false);
 export const kw_while = kind_id("typescript", "while", false);
 export const kw_do = kind_id("typescript", "do", false);
 export const kw_switch = kind_id("typescript", "switch", false);
