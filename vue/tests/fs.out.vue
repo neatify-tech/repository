@@ -338,7 +338,7 @@
 			previewHtml.value = structured?.content || "";
 		}
 		catch (err) {
-			previewError.value = errinstanceofError ? err.message : "Failed to load file";
+			previewError.value = err instanceof Error ? err.message : "Failed to load file";
 		}
 		finally {
 			previewLoading.value = false;
@@ -383,7 +383,7 @@
 		}
 		catch (err) {
 			copyLabel.value = "Copy";
-			previewError.value = errinstanceofError ? err.message : "Copy failed";
+			previewError.value = err instanceof Error ? err.message : "Copy failed";
 		}
 	}
 	async function loadRoots() {
@@ -410,7 +410,7 @@
 			buildTree(matches);
 		}
 		catch (err) {
-			error.value = errinstanceofError ? err.message : "Failed to load tree";
+			error.value = err instanceof Error ? err.message : "Failed to load tree";
 			treeNodes.value = [];
 		}
 		finally {
@@ -446,7 +446,7 @@
 			}
 		}
 		catch (err) {
-			error.value = errinstanceofError ? err.message : "Search failed";
+			error.value = err instanceof Error ? err.message : "Search failed";
 			matchPaths.value = new Set();
 		}
 		finally {
@@ -491,7 +491,7 @@
 				await loadTree();
 			}
 			catch (err) {
-				error.value = errinstanceofError ? err.message : "Failed to initialize";
+				error.value = err instanceof Error ? err.message : "Failed to initialize";
 			}
 		}
 	);

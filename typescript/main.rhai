@@ -1597,7 +1597,9 @@ fn doc_binary_expression(node, children) {
 		kinds::pipe,
 		kinds::caret,
 		kinds::shl,
-		kinds::shr
+		kinds::shr,
+		kinds::kw_in,
+		kinds::kw_instanceof
 	];
 	let raw = text(node);
 	let max_width = configuration::values["max_width"];
@@ -1895,6 +1897,9 @@ fn doc_unary_expression(children) {
 		let k = children.kind(i);
 		if k == kinds::plus || k == kinds::minus || k == kinds::bang {
 			parts.push(doc_text(slice(children.range(i)).trim()));
+		}
+		else if k == kinds::kw_typeof {
+			parts.push(doc_text("typeof "));
 		}
 		else {
 			parts.push(doc_for_child(children, i));

@@ -107,8 +107,8 @@ const KIND_PAIRS = [
 	["for", false],
 	["in", false],
 	["of", false],
-	["in", false],
-	["of", false],
+	["instanceof", false],
+	["typeof", false],
 	["while", false],
 	["do", false],
 	["switch", false],
@@ -247,6 +247,8 @@ export const kw_else = kind_id("typescript", "else", false);
 export const kw_for = kind_id("typescript", "for", false);
 export const kw_in = kind_id("typescript", "in", false);
 export const kw_of = kind_id("typescript", "of", false);
+export const kw_instanceof = kind_id("typescript", "instanceof", false);
+export const kw_typeof = kind_id("typescript", "typeof", false);
 export const kw_while = kind_id("typescript", "while", false);
 export const kw_do = kind_id("typescript", "do", false);
 export const kw_switch = kind_id("typescript", "switch", false);
