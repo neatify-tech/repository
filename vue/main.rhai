@@ -330,11 +330,39 @@ fn doc_element(node, children) {
 		}
 		let inline_docs = [];
 		let j = 0;
+		let prev_range = ();
+		let prev_kind = -1;
 		while j < content.len() {
-			let d = doc_for_child(children, content[j]);
+			let idx = content[j];
+			let k = children.kind(idx);
+			let r = children.range(idx);
+			let raw = slice(r);
+			if prev_kind == kinds::interpolation && (k == kinds::text || k == kinds::raw_text) {
+				if raw.starts_with(" ") || raw.starts_with("\t") {
+					inline_docs.push(doc_text(" "));
+				}
+			}
+			let d = doc_for_child(children, idx);
+			if prev_range != () {
+				let gap = slice(range(end(prev_range), start(r)));
+				if gap.len() > 0 && trim(gap) == "" {
+					inline_docs.push(doc_text(" "));
+				}
+			}
 			if d != () {
 				inline_docs.push(d);
 			}
+			let next_idx = if j + 1 < content.len() { content[j + 1] } else { -1 };
+			if next_idx >= 0 {
+				let next_kind = children.kind(next_idx);
+				if (k == kinds::text || k == kinds::raw_text) && next_kind == kinds::interpolation {
+					if raw.ends_with(" ") || raw.ends_with("\t") {
+						inline_docs.push(doc_text(" "));
+					}
+				}
+			}
+			prev_range = r;
+			prev_kind = k;
 			j += 1;
 		}
 		return doc_concat_list([start_doc, doc_concat_list(inline_docs), end_doc]);
