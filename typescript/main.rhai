@@ -654,13 +654,17 @@ fn doc_function_declaration(node, children) {
 	let k_identifier = kinds::identifier;
 	let k_params = kinds::formal_parameters;
 	let k_block = kinds::statement_block;
+	let k_type_annotation = kinds::type_annotation;
 	let k_function = kinds::kw_function;
 	let k_async = kinds::kw_async;
 	let name_doc = ();
 	let params_doc = ();
 	let block_doc = ();
+	let return_doc = ();
 	let function_idx = -1;
 	let has_async = false;
+	let params_idx = -1;
+	let block_idx = -1;
 	let i = 0;
 	while i < children.len {
 		let k = children.kind(i);
@@ -678,14 +682,32 @@ fn doc_function_declaration(node, children) {
 		}
 		else if k == k_params {
 			params_doc = doc_for_child_or_build(node, children, i);
+			params_idx = i;
 		}
 		else if k == k_block {
 			block_doc = doc_for_child_or_build(node, children, i);
+			block_idx = i;
 		}
 		i += 1;
 	}
 	if params_doc == () || block_doc == () {
 		return doc_text(text(node));
+	}
+	if params_idx >= 0 && block_idx >= 0 {
+		let params_range = children.range(params_idx);
+		let block_range = children.range(block_idx);
+		i = 0;
+		while i < children.len {
+			let k = children.kind(i);
+			if k == k_type_annotation {
+				let r = children.range(i);
+				if start(r) >= end(params_range) && start(r) < start(block_range) {
+					return_doc = doc_for_child(children, i);
+					break;
+				}
+			}
+			i += 1;
+		}
 	}
 	let prefix = if has_async {
 		"async "
@@ -694,9 +716,21 @@ fn doc_function_declaration(node, children) {
 		""
 	};
 	if name_doc != () {
-		return doc_concat_list([doc_text(prefix + "function "), name_doc, params_doc, doc_text(" "), block_doc]);
+		let parts = [doc_text(prefix + "function "), name_doc, params_doc];
+		if return_doc != () {
+			parts.push(return_doc);
+		}
+		parts.push(doc_text(" "));
+		parts.push(block_doc);
+		return doc_concat_list(parts);
 	}
-	doc_concat_list([doc_text(prefix + "function"), params_doc, doc_text(" "), block_doc])
+	let parts = [doc_text(prefix + "function"), params_doc];
+	if return_doc != () {
+		parts.push(return_doc);
+	}
+	parts.push(doc_text(" "));
+	parts.push(block_doc);
+	doc_concat_list(parts)
 }
 
 fn doc_if_statement(node, children) {

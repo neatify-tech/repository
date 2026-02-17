@@ -164,7 +164,7 @@
 			return `${matches} match${matches === 1 ? "" : "es"} (${label})`;
 		}
 	);
-	function ensureMcp() {
+	function ensureMcp(): (method: string, params: Record<string, unknown>) => Promise<any> {
 		const mcp = (window as unknown as { mcp?: { callTool?: any } }).mcp;
 		if (!mcp?.callTool) {
 			throw new Error("mcp.callTool unavailable");
@@ -253,7 +253,7 @@
 		treeNodes.value = rootsOut;
 		updateVisibility();
 	}
-	function collectExpanded(node: TreeNode) {
+	function collectExpanded(node: TreeNode): string[] {
 		const paths = node.expanded ? [node.path] : [];
 		node.children.forEach((child) => paths.push(...collectExpanded(child)));
 		return paths;
