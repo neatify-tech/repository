@@ -1397,6 +1397,154 @@ fn doc_string_literal(node) {
 	doc
 }
 
+fn doc_template_substitution(node) {
+	let r = byte_range(node);
+	let raw = slice(r);
+	if !raw.starts_with("${") || !raw.ends_with("}") {
+		return doc_text(raw);
+	}
+	let start_pos = start_position(node);
+	let end_pos = end_position(node);
+	if row(start_pos) == row(end_pos) {
+		return doc_text(raw);
+	}
+	let expr_matches = query("typescript", "(template_substitution (_) @expr)", node);
+	let expr = ();
+	let i = 0;
+	while i < expr_matches.len() {
+		let m = expr_matches[i];
+		let enode = m.captures()["expr"];
+		if enode != () {
+			expr = enode;
+			break;
+		}
+		i += 1;
+	}
+	if expr == () {
+		return doc_text(raw);
+	}
+	let expr_doc = doc_for_node(expr);
+	if expr_doc == () {
+		expr_doc = build_doc(expr, children(expr));
+	}
+	let indent_size = configuration::values["tab_width"];
+	let inner = doc_indent(indent_size, doc_concat_list([doc_hardline(), expr_doc]));
+	doc_concat_list([
+		doc_text("${"),
+		inner,
+		doc_hardline(),
+		doc_text("}")
+	])
+}
+
+fn doc_template_string(node) {
+	let node_children = node.children();
+	if node_children == () || node_children.len() == 0 {
+		return doc_text(text(node));
+	}
+	let node_range = byte_range(node);
+	let safe = true;
+	let i = 0;
+	while i < node_children.len() {
+		let child = node_children[i];
+		if child == () {
+			i += 1;
+			continue;
+		}
+		let r = byte_range(child);
+		let is_sub = child.kind_id() == kinds::template_substitution || slice(r).starts_with("${");
+		if !is_sub {
+			let start_pos = start_position(child);
+			let end_pos = end_position(child);
+			if row(start_pos) != row(end_pos) {
+				safe = false;
+				break;
+			}
+		}
+		i += 1;
+	}
+	if safe {
+		let i = 0;
+		while i < node_children.len() {
+			let child = node_children[i];
+			if child != () {
+				let r = byte_range(child);
+				let is_sub = child.kind_id() == kinds::template_substitution || slice(r).starts_with("${");
+				if !is_sub {
+					i += 1;
+					continue;
+				}
+				let templ_matches = query("typescript", "(template_string) @t", child);
+				for m in templ_matches {
+					let tnode = m.captures()["t"];
+					if tnode != () {
+						let tr = byte_range(tnode);
+						let cr = byte_range(child);
+						if start(tr) >= start(cr) && end(tr) <= end(cr) {
+							safe = false;
+							break;
+						}
+					}
+				}
+				if !safe {
+					break;
+				}
+				let str_matches = query("typescript", "(string) @s", child);
+				for m in str_matches {
+					let snode = m.captures()["s"];
+					if snode == () {
+						continue;
+					}
+					let sraw = slice(byte_range(snode));
+					if sraw.index_of("\n") >= 0 || sraw.index_of("\r") >= 0 {
+						safe = false;
+						break;
+					}
+				}
+				if !safe {
+					break;
+				}
+			}
+			i += 1;
+		}
+	}
+	if !safe {
+		return doc_text(text(node));
+	}
+	let parts = [];
+	let cursor = start(node_range);
+	let i = 0;
+	while i < node_children.len() {
+		let child = node_children[i];
+		if child == () {
+			i += 1;
+			continue;
+		}
+		let r = byte_range(child);
+		if start(r) > cursor {
+			let gap_text = slice(range(cursor, start(r)));
+			if !(safe && gap_text.trim().is_empty()) {
+				parts.push(doc_range(cursor, start(r)));
+			}
+		}
+		let is_sub = child.kind_id() == kinds::template_substitution || slice(r).starts_with("${");
+		if is_sub {
+			parts.push(doc_template_substitution(child));
+		}
+		else {
+			parts.push(doc_range(start(r), end(r)));
+		}
+		if end(r) > cursor {
+			cursor = end(r);
+		}
+		i += 1;
+	}
+	if cursor < end(node_range) {
+		parts.push(doc_range(cursor, end(node_range)));
+	}
+	doc_concat_list(parts)
+}
+
 fn doc_formal_parameters(node, children) {
 	let k_lparen = kinds::lparen;
 	let k_rparen = kinds::rparen;
@@ -2182,7 +2330,7 @@ fn build_doc(node, children) {
 		if k == kinds::string {
 			return doc_string_literal(node);
 		}
-		return doc_text(text(node));
+		return doc_template_string(node);
 	}
 	if k == kinds::number || k == kinds::lit_true || k == kinds::lit_false || k == kinds::lit_null {
 		return doc_text(text(node));

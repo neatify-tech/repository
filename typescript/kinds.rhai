@@ -47,6 +47,8 @@ const KIND_PAIRS = [
 	["property_identifier", true],
 	["string", true],
 	["template_string", true],
+	["template_substitution", true],
+	["string_fragment", true],
 	["number", true],
 	["true", true],
 	["false", true],
@@ -185,6 +187,8 @@ export const identifier = kind_id("typescript", "identifier", true);
 export const property_identifier = kind_id("typescript", "property_identifier", true);
 export const string = kind_id("typescript", "string", true);
 export const template_string = kind_id("typescript", "template_string", true);
+export const template_substitution = kind_id("typescript", "template_substitution", true);
+export const string_fragment = kind_id("typescript", "string_fragment", true);
 export const number = kind_id("typescript", "number", true);
 export const lit_true = kind_id("typescript", "true", true);
 export const lit_false = kind_id("typescript", "false", true);
