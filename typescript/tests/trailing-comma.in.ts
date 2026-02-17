@@ -33,7 +33,7 @@ a = {
     "--mcp-ring-color": "rgba(249, 115, 22, 0.35)"
   };
 
-b = a = {
+b = {
     "--mcp-color-bg": "#0b1116",
     "--mcp-color-fg": "#e7eef5",
     "--mcp-color-muted": "#98a2b3",

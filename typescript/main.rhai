@@ -2274,7 +2274,12 @@ fn doc_object_expression(children) {
 	let inner = [];
 	j = 0;
 	while j < fields.len() {
-		inner.push(doc_concat_list([fields[j], doc_text(",")]));
+		if j < fields.len() - 1 {
+			inner.push(doc_concat_list([fields[j], doc_text(",")]));
+		}
+		else {
+			inner.push(fields[j]);
+		}
 		if j < fields.len() - 1 {
 			inner.push(doc_hardline());
 		}

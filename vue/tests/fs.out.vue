@@ -306,7 +306,7 @@
 	}
 	function isVisible(node: TreeNode) {
 		if (!filterActive.value) return true;
-		return visiblePaths.value?.has(node.path)??false;
+		return visiblePaths.value?.has(node.path) ?? false;
 	}
 	function isMatched(node: TreeNode) {
 		if (!filterActive.value) return false;
@@ -334,7 +334,7 @@
 				{ path: absolutePath, limit: 0 },
 				{ highlight: true }
 			);
-			const structured = result?.structuredContent??result;
+			const structured = result?.structuredContent ?? result;
 			previewHtml.value = structured?.content || "";
 		}
 		catch (err) {
@@ -356,7 +356,7 @@
 				"read_file",
 				{ path: absolutePath, limit: 0 }
 			);
-			const structured = result?.structuredContent??result;
+			const structured = result?.structuredContent ?? result;
 			const raw = structured?.content ? String(structured.content) : "";
 			const cleaned = stripLineNumbers(raw);
 			if (navigator.clipboard?.writeText) {
@@ -388,7 +388,7 @@
 	}
 	async function loadRoots() {
 		const result = await callTool("list_roots");
-		const structured = result?.structuredContent??result;
+		const structured = result?.structuredContent ?? result;
 		console.debug("[mcp-ui] list_roots structured", structured);
 		const items = (structured?.roots || []) as RootItem[];
 		roots.value = items;
@@ -404,7 +404,7 @@
 				"find_files",
 				{ root: currentRoot.value, pattern: "", limit: 0 }
 			);
-			const structured = result?.structuredContent??result;
+			const structured = result?.structuredContent ?? result;
 			console.debug("[mcp-ui] find_files structured", structured);
 			const matches = (structured?.matches || []) as string[];
 			buildTree(matches);
@@ -430,7 +430,7 @@
 					"find_files",
 					{ root: currentRoot.value, pattern: term, glob: true, limit: 0 }
 				);
-				const structured = result?.structuredContent??result;
+				const structured = result?.structuredContent ?? result;
 				const entries = (structured?.matches || []) as string[];
 				const normalized = entries.map((entry) => normalizeEntry(entry).path);
 				matchPaths.value = new Set(normalized);
@@ -440,7 +440,7 @@
 					"search_files",
 					{ root: currentRoot.value, pattern: term, context: 0 }
 				);
-				const structured = result?.structuredContent??result;
+				const structured = result?.structuredContent ?? result;
 				const files = (structured?.files || []) as Array<{ path: string }>;
 				matchPaths.value = new Set(files.map((file) => file.path));
 			}
