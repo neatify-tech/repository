@@ -140,4 +140,52 @@ fn text_cols(text, tab_width) {
 	}
 	col
 }
+
+fn is_safe_wrap_char(ch) {
+	ch == " " || ch == ","
+}
+
+fn find_wrap_break(text, max_len, backtrack_limit, overflow_limit) {
+	if max_len <= 0 {
+		return -1;
+	}
+	let len = text.len();
+	if len <= max_len {
+		return len;
+	}
+	let last_safe = -1;
+	let i = 0;
+	let upper = if max_len < len { max_len } else { len - 1 };
+	while i <= upper {
+		let ch = text.sub_string(i, 1);
+		if is_safe_wrap_char(ch) {
+			last_safe = i;
+		}
+		i += 1;
+	}
+	if last_safe >= 0 {
+		let take = last_safe + 1;
+		if max_len - last_safe <= backtrack_limit {
+			return take;
+		}
+	}
+	if overflow_limit > 0 {
+		let i = max_len + 1;
+		let upper = max_len + overflow_limit;
+		if upper >= len {
+			upper = len - 1;
+		}
+		while i <= upper {
+			let ch = text.sub_string(i, 1);
+			if is_safe_wrap_char(ch) {
+				return i + 1;
+			}
+			i += 1;
+		}
+	}
+	if last_safe >= 0 {
+		return last_safe + 1;
+	}
+	max_len
+}
 // Exports are implicit via module import.

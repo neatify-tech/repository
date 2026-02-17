@@ -1495,19 +1495,28 @@ fn doc_string_literal(node) {
 	let parts = [];
 	let remaining = inner;
 	let first = true;
+	let backtrack_limit = 12;
+	let overflow_limit = 8;
 	while !remaining.is_empty() {
-		let take = if first {
+		let max_len = if first {
 			first_max
 		}
 		else {
 			cont_max
 		};
-		if remaining.len() <= take {
+		if remaining.len() <= max_len {
 			parts.push(remaining);
 			break;
 		}
-		let chunk = remaining.sub_string(0, take);
-		parts.push(chunk);
+		let take = whitespace::find_wrap_break(remaining, max_len, backtrack_limit, overflow_limit);
+		if take <= 0 {
+			break;
+		}
+		if take >= remaining.len() {
+			parts.push(remaining);
+			break;
+		}
+		parts.push(remaining.sub_string(0, take));
 		remaining = remaining.sub_string(take, remaining.len() - take);
 		first = false;
 	}
