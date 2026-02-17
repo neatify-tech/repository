@@ -2245,6 +2245,7 @@ fn doc_object_expression(children) {
 		return doc_text("{}");
 	}
 	let max_width = configuration::values["max_width"];
+	let force_multiline = fields.len() >= 4;
 	let inline_len = {
 		let len = 2;
 		let j = 0;
@@ -2267,7 +2268,7 @@ fn doc_object_expression(children) {
 		j += 1;
 	}
 	let inline_doc = doc_concat_list([doc_text("{ "), doc_concat_list(parts), doc_text(" }")]);
-	if inline_len <= max_width {
+	if !force_multiline && inline_len <= max_width {
 		return inline_doc;
 	}
 	let indent_size = configuration::values["tab_width"];

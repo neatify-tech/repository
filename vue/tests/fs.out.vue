@@ -193,7 +193,13 @@
 			const key = `${path}|${isDir ? "dir" : "file"}`;
 			const existing = nodes.get(key);
 			if (existing) return existing;
-			const node: TreeNode = { name, path, isDir, children: [], expanded: expanded.has(path) };
+			const node: TreeNode = {
+				name,
+				path,
+				isDir,
+				children: [],
+				expanded: expanded.has(path)
+			};
 			nodes.set(key, node);
 			return node;
 		};
@@ -418,7 +424,12 @@
 			if (searchMode.value === "name") {
 				const result = await callTool(
 					"find_files",
-					{ root: currentRoot.value, pattern: term, glob: true, limit: 0 }
+					{
+						root: currentRoot.value,
+						pattern: term,
+						glob: true,
+						limit: 0
+					}
 				);
 				const structured = result?.structuredContent ?? result;
 				const entries = (structured?.matches || []) as string[];
