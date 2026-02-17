@@ -351,9 +351,29 @@ fn doc_element(node, children) {
 		let inline_allowed = inline_kind == k_text || inline_kind == k_raw || inline_kind == k_entity || (inline_kind == k_element && inline_container_tag(tag_name));
 		inline_ok = single && inline_allowed && no_newlines && fits;
 	}
+	if single {
+		let idx = content[0];
+		let k = children.kind(idx);
+		if (k == k_text || k == k_raw) {
+			let r = children.range(idx);
+			let raw = slice(r);
+			if raw.index_of("\n") < 0 && raw.index_of("\r") < 0 {
+				return doc_concat_list([start_doc, doc_range(start(r), end(r)), end_doc]);
+			}
+		}
+	}
 	if inline_ok {
 		if content.len() == 1 {
-			let inner_doc = doc_for_child(children, content[0]);
+			let idx = content[0];
+			let k = children.kind(idx);
+			if k == k_text || k == k_raw {
+				let r = children.range(idx);
+				let raw = slice(r);
+				if raw.index_of("\n") < 0 && raw.index_of("\r") < 0 {
+					return doc_concat_list([start_doc, doc_range(start(r), end(r)), end_doc]);
+				}
+			}
+			let inner_doc = doc_for_child(children, idx);
 			if inner_doc == () {
 				return doc_concat_list([start_doc, end_doc]);
 			}
