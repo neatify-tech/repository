@@ -1440,6 +1440,7 @@ fn doc_method_invocation(node, children) {
 
 fn doc_lambda_expression(node, children) {
 	let k_block = kinds::block;
+	let k_ctor_body = kinds::constructor_body;
 	let k_arrow = kinds::arrow;
 	let block_idx = -1;
 	let arrow_idx = -1;
@@ -2779,12 +2780,13 @@ fn doc_block(node, children) {
 fn doc_method_like(node, children, body_capture) {
 	let k_formal_params = kinds::formal_parameters;
 	let k_block = kinds::block;
+	let k_ctor_body = kinds::constructor_body;
 	let body_idx = -1;
 	let params_idx = -1;
 	let i = 0;
 	while i < children.len {
 		let k = children.kind(i);
-		if k == k_block {
+		if k == k_block || k == k_ctor_body {
 			body_idx = i;
 			break;
 		}
@@ -3382,7 +3384,7 @@ fn build_doc(node, children) {
 	if k == kinds::string_literal {
 		return doc_string_literal(node);
 	}
-	if k == kinds::block {
+	if k == kinds::block || k == kinds::constructor_body {
 		return doc_block(node, children);
 	}
 	if k == kinds::if_statement {
@@ -3502,6 +3504,7 @@ let queries = [
 	"(block_comment) @n",
 	"(string_literal) @n",
 	"(block) @n",
+	"(constructor_body) @n",
 	"(parenthesized_expression) @n",
 	"(cast_expression) @n",
 	"(if_statement) @n",

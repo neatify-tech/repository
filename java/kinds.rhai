@@ -25,6 +25,7 @@ export const spread_parameter = kind_id("java", "spread_parameter", true);
 export const formal_parameters = kind_id("java", "formal_parameters", true);
 export const for_statement = kind_id("java", "for_statement", true);
 export const constructor_declaration = kind_id("java", "constructor_declaration", true);
+export const constructor_body = kind_id("java", "constructor_body", true);
 export const compact_constructor_declaration = kind_id("java", "compact_constructor_declaration", true);
 export const class_declaration = kind_id("java", "class_declaration", true);
 export const interface_declaration = kind_id("java", "interface_declaration", true);
