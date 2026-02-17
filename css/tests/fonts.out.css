@@ -1,0 +1,7 @@
+.content-text {
+	margin: 0;
+	white-space: pre-wrap;
+	font-family: "IBM Plex Mono", "SFMono-Regular", "Menlo", monospace;
+	font-size: 13px;
+	color: #d1d5db;
+}

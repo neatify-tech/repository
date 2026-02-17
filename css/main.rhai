@@ -76,12 +76,30 @@ fn normalize_css_text(text, space_after_colon, space_after_comma, space_before_p
 		if ch == "," {
 			out = trim_trailing_space(out);
 			out = out + ",";
-			if space_after_comma {
-				out = out + " ";
-			}
 			pending_space = false;
 			last_was_colon = false;
 			i += 1;
+			let j = i;
+			while j < text.len() {
+				let next = text.sub_string(j, 1);
+				if next == " " || next == "\t" || next == "\n" || next == "\r" {
+					j += 1;
+					continue;
+				}
+				break;
+			}
+			if space_after_comma {
+				if j < text.len() {
+					let next = text.sub_string(j, 1);
+					if next != ")" && next != "," {
+						out = out + " ";
+					}
+				}
+				else {
+					out = out + " ";
+				}
+			}
+			i = j;
 			continue;
 		}
 		if ch == ":" {
@@ -120,13 +138,11 @@ fn normalize_css_text(text, space_after_colon, space_after_comma, space_before_p
 			continue;
 		}
 		if pending_space {
-			if out.len() > 0 {
-				let last = out.sub_string(out.len() - 1, 1);
-				if last != " " && last != "\t" {
-					out = out + " ";
-				}
-			}
 			pending_space = false;
+			let last = if out.len() > 0 { out.sub_string(out.len() - 1, 1) } else { "" };
+			if last != " " && last != "\t" && last != "," {
+				out = out + " ";
+			}
 		}
 		out = out + ch;
 		last_was_colon = false;
