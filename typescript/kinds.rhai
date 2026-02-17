@@ -85,6 +85,7 @@ const KIND_PAIRS = [
 	["!=", false],
 	["===", false],
 	["!==", false],
+	["??", false],
 	["<", false],
 	[">", false],
 	["<=", false],
@@ -97,16 +98,22 @@ const KIND_PAIRS = [
 	["^", false],
 	["<<", false],
 	[">>", false],
+	[">>>", false],
 	["+=", false],
 	["-=", false],
 	["*=", false],
 	["/=", false],
 	["%=", false],
+	["**", false],
 	["<<=", false],
 	[">>=", false],
+	[">>>=", false],
 	["&=", false],
 	["|=", false],
 	["^=", false],
+	["??=", false],
+	["&&=", false],
+	["||=", false],
 	["if", false],
 	["else", false],
 	["for", false],
@@ -233,6 +240,7 @@ export const eq_eq = kind_id("typescript", "==", false);
 export const not_eq = kind_id("typescript", "!=", false);
 export const eq_eq_eq = kind_id("typescript", "===", false);
 export const not_eq_eq = kind_id("typescript", "!==", false);
+export const coalesce = kind_id("typescript", "??", false);
 export const lt = kind_id("typescript", "<", false);
 export const gt = kind_id("typescript", ">", false);
 export const lt_eq = kind_id("typescript", "<=", false);
@@ -245,16 +253,22 @@ export const pipe = kind_id("typescript", "|", false);
 export const caret = kind_id("typescript", "^", false);
 export const shl = kind_id("typescript", "<<", false);
 export const shr = kind_id("typescript", ">>", false);
+export const ushr = kind_id("typescript", ">>>", false);
 export const plus_assign = kind_id("typescript", "+=", false);
 export const minus_assign = kind_id("typescript", "-=", false);
 export const star_assign = kind_id("typescript", "*=", false);
 export const slash_assign = kind_id("typescript", "/=", false);
 export const percent_assign = kind_id("typescript", "%=", false);
+export const pow = kind_id("typescript", "**", false);
 export const shl_assign = kind_id("typescript", "<<=", false);
 export const shr_assign = kind_id("typescript", ">>=", false);
+export const ushr_assign = kind_id("typescript", ">>>=", false);
 export const and_assign = kind_id("typescript", "&=", false);
 export const or_assign = kind_id("typescript", "|=", false);
 export const xor_assign = kind_id("typescript", "^=", false);
+export const coalesce_assign = kind_id("typescript", "??=", false);
+export const and_and_assign = kind_id("typescript", "&&=", false);
+export const or_or_assign = kind_id("typescript", "||=", false);
 export const kw_if = kind_id("typescript", "if", false);
 export const kw_else = kind_id("typescript", "else", false);
 export const kw_for = kind_id("typescript", "for", false);

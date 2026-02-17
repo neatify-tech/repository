@@ -840,52 +840,41 @@ fn doc_class_declaration(node, children) {
 }
 
 fn doc_if_statement(node, children) {
-	let block_idx = -1;
 	let else_idx = -1;
 	let i = 0;
 	while i < children.len {
 		let k = children.kind(i);
-		if k == kinds::statement_block && block_idx < 0 {
-			block_idx = i;
-		}
-		else if k == kinds::else_clause {
+		if k == kinds::else_clause {
 			else_idx = i;
-		}
-		i += 1;
-	}
-	if block_idx < 0 {
-		return doc_text(text(node));
-	}
-	let cond_idx = -1;
-	i = 0;
-	while i < block_idx {
-		let k = children.kind(i);
-		if k != kinds::kw_if {
-			cond_idx = i;
 			break;
 		}
 		i += 1;
 	}
-	if cond_idx < 0 {
+	let cond_idx = -1;
+	let then_idx = -1;
+	i = 0;
+	while i < children.len {
+		let k = children.kind(i);
+		if k != kinds::kw_if && cond_idx < 0 {
+			cond_idx = i;
+		}
+		else if cond_idx >= 0 && i != else_idx && then_idx < 0 {
+			then_idx = i;
+			break;
+		}
+		i += 1;
+	}
+	if cond_idx < 0 || then_idx < 0 {
 		return doc_text(text(node));
 	}
 	let cond_doc = doc_for_child(children, cond_idx);
-	let block_doc = doc_for_child(children, block_idx);
+	let then_doc = doc_for_child(children, then_idx);
+	let base = doc_concat_list([doc_text("if "), cond_doc, doc_text(" "), then_doc]);
 	if else_idx >= 0 {
 		let else_doc = doc_for_child(children, else_idx);
-		return doc_concat_list(
-			[
-				doc_text("if "),
-				cond_doc,
-				doc_text(" "),
-				block_doc,
-				doc_hardline(),
-				doc_text("else "),
-				else_doc
-			]
-		);
+		return doc_concat_list([base, doc_hardline(), doc_text("else "), else_doc]);
 	}
-	doc_concat_list([doc_text("if "), cond_doc, doc_text(" "), block_doc])
+	base
 }
 
 fn doc_while_statement(node, children) {
@@ -1731,6 +1720,7 @@ fn doc_binary_expression(node, children) {
 		kinds::not_eq,
 		kinds::eq_eq_eq,
 		kinds::not_eq_eq,
+		kinds::coalesce,
 		kinds::lt,
 		kinds::gt,
 		kinds::lt_eq,
@@ -1740,6 +1730,7 @@ fn doc_binary_expression(node, children) {
 		kinds::star,
 		kinds::slash,
 		kinds::percent,
+		kinds::pow,
 		kinds::and_and,
 		kinds::or_or,
 		kinds::amp,
@@ -1747,8 +1738,18 @@ fn doc_binary_expression(node, children) {
 		kinds::caret,
 		kinds::shl,
 		kinds::shr,
+		kinds::ushr,
 		kinds::kw_in,
-		kinds::kw_instanceof
+		kinds::kw_instanceof,
+		kinds::shl_assign,
+		kinds::shr_assign,
+		kinds::ushr_assign,
+		kinds::and_assign,
+		kinds::or_assign,
+		kinds::xor_assign,
+		kinds::coalesce_assign,
+		kinds::and_and_assign,
+		kinds::or_or_assign
 	];
 	let raw = text(node);
 	let max_width = configuration::values["max_width"];
