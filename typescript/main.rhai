@@ -839,6 +839,156 @@ fn doc_class_declaration(node, children) {
 	doc_concat_list([doc_text(header), doc_text(" "), body_doc])
 }
 
+fn doc_named_imports(node) {
+	let k_spec = kinds::import_specifier;
+	let specs = [];
+	let spec_ranges = [];
+	let i = 0;
+	while i < node.len {
+		let k = node.kind(i);
+		if k == k_spec {
+			specs.push(doc_for_child(node, i));
+			spec_ranges.push(node.range(i));
+		}
+		i += 1;
+	}
+	if specs.len() == 0 {
+		return doc_text("{}");
+	}
+	let max_width = configuration::values["max_width"];
+	let inline_len = 2;
+	let j = 0;
+	while j < specs.len() {
+		let r = spec_ranges[j];
+		if r != () {
+			inline_len += slice(r).trim().len();
+		}
+		if j < specs.len() - 1 {
+			inline_len += 2;
+		}
+		j += 1;
+	}
+	let parts = [];
+	j = 0;
+	while j < specs.len() {
+		parts.push(specs[j]);
+		if j < specs.len() - 1 {
+			parts.push(doc_text(", "));
+		}
+		j += 1;
+	}
+	let inline_doc = doc_concat_list([doc_text("{ "), doc_concat_list(parts), doc_text(" }")]);
+	if inline_len <= max_width {
+		return inline_doc;
+	}
+	let inner = [];
+	j = 0;
+	while j < specs.len() {
+		inner.push(specs[j]);
+		if j < specs.len() - 1 {
+			inner.push(doc_text(","));
+			inner.push(doc_hardline());
+		}
+		j += 1;
+	}
+	let indent_size = configuration::values["tab_width"];
+	doc_concat_list([
+		doc_text("{"),
+		doc_indent(indent_size, doc_concat_list([doc_hardline(), doc_concat_list(inner)])),
+		doc_hardline(),
+		doc_text("}")
+	])
+}
+
+fn doc_import_clause(node, children) {
+	let k_named = kinds::named_imports;
+	let k_namespace = kinds::namespace_import;
+	let default_doc = ();
+	let named_doc = ();
+	let namespace_doc = ();
+	let i = 0;
+	while i < children.len {
+		let child = children.child(i);
+		if child == () {
+			i += 1;
+			continue;
+		}
+		let k = child.kind_id();
+		if k == k_named {
+			named_doc = doc_named_imports(child);
+		}
+		else if k == k_namespace {
+			let r = byte_range(child);
+			namespace_doc = doc_range(start(r), end(r));
+		}
+		else if default_doc == () {
+			default_doc = doc_for_child(children, i);
+		}
+		i += 1;
+	}
+	let parts = [];
+	if default_doc != () {
+		parts.push(default_doc);
+	}
+	if namespace_doc != () {
+		if parts.len() > 0 {
+			parts.push(doc_text(", "));
+		}
+		parts.push(namespace_doc);
+	}
+	if named_doc != () {
+		if parts.len() > 0 {
+			parts.push(doc_text(", "));
+		}
+		parts.push(named_doc);
+	}
+	if parts.len() == 0 {
+		return doc_text("");
+	}
+	doc_concat_list(parts)
+}
+
+fn doc_import_statement(node, children) {
+	let k_clause = kinds::import_clause;
+	let clause_idx = -1;
+	let i = 0;
+	while i < children.len {
+		let k = children.kind(i);
+		if k == k_clause {
+			clause_idx = i;
+		}
+		i += 1;
+	}
+	if clause_idx < 0 {
+		return doc_text(text(node));
+	}
+	let clause_node = children.child(clause_idx);
+	let clause_doc = doc_import_clause(clause_node, clause_node);
+	let source_range = byte_range(node);
+	let source_text = text(node);
+	let is_type_import = source_text.trim().starts_with("import type");
+	let from_idx = source_text.last_index_of("from ");
+	let source_doc = if from_idx >= 0 {
+		let src_start = start(source_range) + from_idx + 5;
+		let src = slice(range(src_start, end(source_range))).trim();
+		if src.ends_with(";") {
+			src = src.sub_string(0, src.len() - 1).trim();
+		}
+		doc_text(src)
+	}
+	else {
+		()
+	};
+	let prefix = if is_type_import { "import type " } else { "import " };
+	if clause_doc == () {
+		return doc_text(text(node));
+	}
+	if source_doc != () {
+		return doc_concat_list([doc_text(prefix), clause_doc, doc_text(" from "), source_doc, doc_text(";")]);
+	}
+	doc_concat_list([doc_text(prefix), clause_doc, doc_text(";")])
+}
+
 fn doc_if_statement(node, children) {
 	let else_idx = -1;
 	let i = 0;
@@ -2465,6 +2615,15 @@ fn build_doc(node, children) {
 	if k == kinds::method_definition {
 		return doc_method_definition(node, children);
 	}
+	if k == kinds::named_imports {
+		return doc_named_imports(node);
+	}
+	if k == kinds::import_clause {
+		return doc_import_clause(node, children);
+	}
+	if k == kinds::import_statement {
+		return doc_import_statement(node, children);
+	}
 	if k == kinds::class_body {
 		return doc_class_body(node, children);
 	}
@@ -2554,6 +2713,8 @@ let queries = [
 	"(class_declaration) @n",
 	"(class_body) @n",
 	"(method_definition) @n",
+	"(import_statement) @n",
+	"(named_imports) @n",
 	"(variable_declarator) @n",
 	"(if_statement) @n",
 	"(for_statement) @n",

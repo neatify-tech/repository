@@ -3,6 +3,11 @@ const KIND_PAIRS = [
 	["statement_block", true],
 	["expression_statement", true],
 	["lexical_declaration", true],
+	["import_statement", true],
+	["import_clause", true],
+	["named_imports", true],
+	["import_specifier", true],
+	["namespace_import", true],
 	["variable_declaration", true],
 	["variable_declarator", true],
 	["if_statement", true],
@@ -157,6 +162,11 @@ export const program = kind_id("typescript", "program", true);
 export const statement_block = kind_id("typescript", "statement_block", true);
 export const expression_statement = kind_id("typescript", "expression_statement", true);
 export const lexical_declaration = kind_id("typescript", "lexical_declaration", true);
+export const import_statement = kind_id("typescript", "import_statement", true);
+export const import_clause = kind_id("typescript", "import_clause", true);
+export const named_imports = kind_id("typescript", "named_imports", true);
+export const import_specifier = kind_id("typescript", "import_specifier", true);
+export const namespace_import = kind_id("typescript", "namespace_import", true);
 export const variable_declaration = kind_id("typescript", "variable_declaration", true);
 export const variable_declarator = kind_id("typescript", "variable_declarator", true);
 export const if_statement = kind_id("typescript", "if_statement", true);
