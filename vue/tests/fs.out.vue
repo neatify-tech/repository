@@ -205,37 +205,37 @@
 		};
 		matches.map(normalizeEntry)
 			.forEach(
-			({ path, isDir }) => {
-				if (!path) return;
-				const parts = path.split("/");
-				let currentPath = "";
-				let parentNode: TreeNode | null = null;
-				parts.forEach(
-					(segment, index) => {
-						currentPath = currentPath ? `${currentPath}/${segment}` : segment;
-						const isLeaf = index === parts.length - 1;
-						const nodeIsDir = isLeaf ? isDir : true;
-						const node = getNode(currentPath, segment, nodeIsDir);
-						if (parentNode && !parentNode.children.includes(node)) {
-							parentNode.children.push(node);
+				({ path, isDir }) => {
+					if (!path) return;
+					const parts = path.split("/");
+					let currentPath = "";
+					let parentNode: TreeNode | null = null;
+					parts.forEach(
+						(segment, index) => {
+							currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+							const isLeaf = index === parts.length - 1;
+							const nodeIsDir = isLeaf ? isDir : true;
+							const node = getNode(currentPath, segment, nodeIsDir);
+							if (parentNode && !parentNode.children.includes(node)) {
+								parentNode.children.push(node);
+							}
+							if (!parentNode && !rootsOut.includes(node)) {
+								rootsOut.push(node);
+							}
+							parentNode = node;
 						}
-						if (!parentNode && !rootsOut.includes(node)) {
-							rootsOut.push(node);
-						}
-						parentNode = node;
-					}
-				);
-			}
-		);
+					);
+				}
+			);
 		const sortTree = (node: TreeNode) => {
 			node.children
 				.sort(
-				(a, b) => {
-					if (a.isDir && !b.isDir) return -1;
-					if (!a.isDir && b.isDir) return 1;
-					return a.name.localeCompare(b.name);
-				}
-			);
+					(a, b) => {
+						if (a.isDir && !b.isDir) return -1;
+						if (!a.isDir && b.isDir) return 1;
+						return a.name.localeCompare(b.name);
+					}
+				);
 			node.children.forEach(sortTree);
 		};
 		rootsOut.sort(

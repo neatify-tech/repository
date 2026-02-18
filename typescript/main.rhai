@@ -331,6 +331,48 @@ fn chain_root(node) {
 	[0]
 }
 
+fn member_expression_breaks_chain(node) {
+	if node == () {
+		return false;
+	}
+	let k_dot = kinds::dot;
+	let k_qdot = kinds::qdot;
+	let dot_idx = -1;
+	let i = 0;
+	while i < node.len {
+		let k = node.kind(i);
+		if k == k_dot || k == k_qdot {
+			dot_idx = i;
+			break;
+		}
+		i += 1;
+	}
+	if dot_idx < 0 {
+		return false;
+	}
+	let receiver_idx = -1;
+	i = dot_idx - 1;
+	while i >= 0 {
+		let k = node.kind(i);
+		if k != k_dot && k != k_qdot {
+			receiver_idx = i;
+			break;
+		}
+		i -= 1;
+	}
+	if receiver_idx < 0 {
+		return false;
+	}
+	let info = chain_root_info(node);
+	let root = info[0];
+	let wrap_chain = root.token_len() > configuration::values["max_width"];
+	let receiver_kind = node.kind(receiver_idx);
+	let receiver_is_chain = receiver_kind == kinds::call_expression || receiver_kind == kinds::member_expression;
+	let receiver_range = node.range(receiver_idx);
+	let root_range = byte_range(root);
+	wrap_chain && (receiver_is_chain || start(receiver_range) != start(root_range))
+}
+
 fn chain_should_wrap(node) {
 	let root = chain_root(node);
 	root.token_len() > configuration::values
@@ -1574,12 +1616,9 @@ fn doc_member_expression(node) {
 	let info = chain_root_info(node);
 	let root = info[0];
 	let saw_args = info[1];
-	let wrap_chain = root.token_len() > configuration::values["max_width"];
-	let root_range = byte_range(root);
-	let receiver_range = node.range(receiver_idx);
 	let receiver_kind = node.kind(receiver_idx);
 	let receiver_is_chain = receiver_kind == kinds::call_expression || receiver_kind == kinds::member_expression;
-	let break_chain = wrap_chain && (receiver_is_chain || start(receiver_range) != start(root_range));
+	let break_chain = member_expression_breaks_chain(node);
 	if break_chain {
 		let base_indent = configuration::values["tab_width"];
 		let indent_size = if saw_args {
@@ -1684,12 +1723,40 @@ fn doc_arguments(node) {
 	}
 	if should_break {
 		let indent_size = configuration::values["tab_width"];
+		let extra_indent = {
+			let add = 0;
+			let parent_call = node.parent();
+			if parent_call != () && parent_call.kind_id() == kinds::call_expression {
+				let callee = ();
+				let i = 0;
+				while i < parent_call.len {
+					let k = parent_call.kind(i);
+					if k != kinds::arguments {
+						callee = parent_call.child(i);
+						break;
+					}
+					i += 1;
+				}
+				if callee != () && callee.kind_id() == kinds::member_expression {
+					if member_expression_breaks_chain(callee) {
+						add = configuration::values["tab_width"];
+					}
+				}
+			}
+			add
+		};
+		let indent_size = indent_size + extra_indent;
+		let closing_doc = if extra_indent > 0 {
+			doc_indent(extra_indent, doc_concat_list([doc_hardline(), doc_text(")")]))
+		}
+		else {
+			doc_concat_list([doc_hardline(), doc_text(")")])
+		};
 		return doc_concat_list(
 			[
 				doc_text("("),
 				doc_indent(indent_size, doc_concat_list([doc_hardline(), doc_concat_list(parts)])),
-				doc_hardline(),
-				doc_text(")")
+				closing_doc
 			]
 		);
 	}
