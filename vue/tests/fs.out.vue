@@ -281,13 +281,11 @@
 		const mark = (node: TreeNode): boolean => {
 			let isVisibleNode = matches.has(node.path);
 			let childVisible = false;
-			node.children.forEach(
-				(child) => {
-					if (mark(child)) {
-						childVisible = true;
-					}
+			node.children.forEach((child) => {
+				if (mark(child)) {
+					childVisible = true;
 				}
-			);
+			});
 			if (childVisible) {
 				hasVisibleChild.add(node.path);
 			}
@@ -325,11 +323,7 @@
 		copyLabel.value = "Copy";
 		try {
 			const absolutePath = resolvePath(currentRoot.value, node.path);
-			const result = await callTool(
-				"read_file",
-				{ path: absolutePath, limit: 0 },
-				{ highlight: true }
-			);
+			const result = await callTool("read_file", { path: absolutePath, limit: 0 }, { highlight: true });
 			const structured = result?.structuredContent ?? result;
 			previewHtml.value = structured?.content || "";
 		}
@@ -348,10 +342,7 @@
 		copyLabel.value = "Copying…";
 		try {
 			const absolutePath = resolvePath(currentRoot.value, selectedPath.value);
-			const result = await callTool(
-				"read_file",
-				{ path: absolutePath, limit: 0 }
-			);
+			const result = await callTool("read_file", { path: absolutePath, limit: 0 });
 			const structured = result?.structuredContent ?? result;
 			const raw = structured?.content ? String(structured.content) : "";
 			const cleaned = stripLineNumbers(raw);
@@ -370,12 +361,9 @@
 				textarea.remove();
 			}
 			copyLabel.value = "Copied";
-			window.setTimeout(
-				() => {
-					copyLabel.value = "Copy";
-				},
-				1200
-			);
+			window.setTimeout(() => {
+				copyLabel.value = "Copy";
+			}, 1200);
 		}
 		catch (err) {
 			copyLabel.value = "Copy";
@@ -396,10 +384,7 @@
 		loading.value = true;
 		error.value = "";
 		try {
-			const result = await callTool(
-				"find_files",
-				{ root: currentRoot.value, pattern: "", limit: 0 }
-			);
+			const result = await callTool("find_files", { root: currentRoot.value, pattern: "", limit: 0 });
 			const structured = result?.structuredContent ?? result;
 			console.debug("[mcp-ui] find_files structured", structured);
 			const matches = (structured?.matches || []) as string[];
@@ -422,25 +407,19 @@
 		}
 		try {
 			if (searchMode.value === "name") {
-				const result = await callTool(
-					"find_files",
-					{
-						root: currentRoot.value,
-						pattern: term,
-						glob: true,
-						limit: 0
-					}
-				);
+				const result = await callTool("find_files", {
+					root: currentRoot.value,
+					pattern: term,
+					glob: true,
+					limit: 0
+				});
 				const structured = result?.structuredContent ?? result;
 				const entries = (structured?.matches || []) as string[];
 				const normalized = entries.map((entry) => normalizeEntry(entry).path);
 				matchPaths.value = new Set(normalized);
 			}
 			else {
-				const result = await callTool(
-					"search_files",
-					{ root: currentRoot.value, pattern: term, context: 0 }
-				);
+				const result = await callTool("search_files", { root: currentRoot.value, pattern: term, context: 0 });
 				const structured = result?.structuredContent ?? result;
 				const files = (structured?.files || []) as Array<{ path: string }>;
 				matchPaths.value = new Set(files.map((file) => file.path));
@@ -458,12 +437,9 @@
 		if (searchTimer) {
 			window.clearTimeout(searchTimer);
 		}
-		searchTimer = window.setTimeout(
-			() => {
-				runSearch();
-			},
-			250
-		);
+		searchTimer = window.setTimeout(() => {
+			runSearch();
+		}, 250);
 	}
 	function setSearchMode(mode: SearchMode) {
 		if (searchMode.value === mode) return;

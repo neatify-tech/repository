@@ -1548,9 +1548,8 @@ fn doc_arguments(node) {
 	if args.len() == 0 {
 		return doc_text("()");
 	}
-	let raw = text(node);
 	let max_width = configuration::values["max_width"];
-	let should_break = raw.len() > max_width || raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0;
+	let should_break = node.token_len() > max_width;
 	let parts = [];
 	let j = 0;
 	while j < args.len() {
