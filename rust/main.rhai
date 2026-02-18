@@ -234,29 +234,29 @@ fn doc_scoped_identifier(node) {
 	doc_concat_list(parts)
 }
 
-fn doc_header_from_children(children, end_idx) {
+fn doc_header_from_children(node, end_idx) {
 	let parts = [];
 	let need_space = false;
 	let i = 0;
 	while i < end_idx {
-		let k = children.kind(i);
+		let k = node.kind(i);
 		if k == kinds::arrow {
 			parts.push(doc_text(" -> "));
 			need_space = false;
 		}
 		else if k == kinds::parameters {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = false;
 		}
 		else if k == kinds::lparen || k == kinds::rparen || k == kinds::comma || k == kinds::colon || k == kinds::colon_colon {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = false;
 		}
 		else {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		i += 1;
@@ -294,10 +294,10 @@ fn desired_item_sep(prev_kind, curr_kind) {
 	2
 }
 
-fn doc_for_child(children, idx) {
-	let d = children.doc(idx);
+fn doc_for_child(node, idx) {
+	let d = node.doc(idx);
 	if d == () {
-		let r = children.range(idx);
+		let r = node.range(idx);
 		return doc_range(start(r), end(r));
 	}
 	d
@@ -409,8 +409,8 @@ fn field_value_node(node) {
 	}()
 }
 
-fn doc_source_file(node, children) {
-	if children.len == 0 {
+fn doc_source_file(node) {
+	if node.len == 0 {
 		return doc_text(text(node));
 	}
 	let pieces = [];
@@ -418,8 +418,8 @@ fn doc_source_file(node, children) {
 	let cursor = start(node_range);
 	let node_children = node.children();
 	let i = 0;
-	while i < children.len {
-		let child_range = children.range(i);
+	while i < node.len {
+		let child_range = node.range(i);
 		let curr_kind = if node_children != () && i < node_children.len() {
 			node_children[i].kind_id()
 		}
@@ -450,7 +450,7 @@ fn doc_source_file(node, children) {
 			pieces.push(doc_hardline());
 			s += 1;
 		}
-		pieces.push(doc_for_child(children, i));
+		pieces.push(doc_for_child(node, i));
 		cursor = end(child_range);
 		i += 1;
 	}
@@ -463,13 +463,13 @@ fn doc_source_file(node, children) {
 	doc_concat_list(pieces)
 }
 
-fn doc_block(node, children) {
+fn doc_block(node) {
 	let k_lbrace = kinds::lbrace;
 	let k_rbrace = kinds::rbrace;
 	let inner = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_lbrace || k == k_rbrace {
 			i += 1;
 			continue;
@@ -477,16 +477,16 @@ fn doc_block(node, children) {
 		if k == kinds::line_comment && inner.len() > 0 {
 			let prev_idx = i - 1;
 			if prev_idx >= 0 {
-				let gap = slice(range(end(children.range(prev_idx)), start(children.range(i))));
+				let gap = slice(range(end(node.range(prev_idx)), start(node.range(i))));
 				if gap.index_of("\n") < 0 && gap.index_of("\r") < 0 {
 					let prev = inner.pop();
-					inner.push(doc_concat_list([prev, doc_text(" "), doc_for_child(children, i)]));
+					inner.push(doc_concat_list([prev, doc_text(" "), doc_for_child(node, i)]));
 					i += 1;
 					continue;
 				}
 			}
 		}
-		inner.push(doc_for_child(children, i));
+		inner.push(doc_for_child(node, i));
 		i += 1;
 	}
 	if inner.len() == 0 {
@@ -510,7 +510,7 @@ fn doc_block(node, children) {
 	])
 }
 
-fn doc_parenthesized_expression(node, children) {
+fn doc_parenthesized_expression(node) {
 	let k_lparen = kinds::lparen;
 	let k_rparen = kinds::rparen;
 	let node_children = node.children();
@@ -554,10 +554,10 @@ fn doc_parenthesized_expression(node, children) {
 	}
 	let parts = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k != k_lparen && k != k_rparen {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -567,16 +567,16 @@ fn doc_parenthesized_expression(node, children) {
 	doc_concat_list([doc_text("("), doc_concat_list(parts), doc_text(")")])
 }
 
-fn doc_arguments(node, children) {
+fn doc_arguments(node) {
 	let k_lparen = kinds::lparen;
 	let k_rparen = kinds::rparen;
 	let k_comma = kinds::comma;
 	let args = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k != k_lparen && k != k_rparen && k != k_comma {
-			args.push(doc_for_child(children, i));
+			args.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -643,16 +643,16 @@ fn doc_arguments(node, children) {
 	doc_concat_list([doc_text("("), doc_concat_list(parts), doc_text(")")])
 }
 
-fn doc_parameters(node, children) {
+fn doc_parameters(node) {
 	let k_lparen = kinds::lparen;
 	let k_rparen = kinds::rparen;
 	let k_comma = kinds::comma;
 	let params = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k != k_lparen && k != k_rparen && k != k_comma {
-			params.push(doc_for_child(children, i));
+			params.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -692,13 +692,13 @@ fn doc_parameters(node, children) {
 	doc_concat_list([doc_text("("), doc_concat_list(parts), doc_text(")")])
 }
 
-fn doc_parameter(children) {
+fn doc_parameter(node) {
 	let k_colon = kinds::colon;
 	let parts = [];
 	let need_space = false;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_colon {
 			parts.push(doc_text(": "));
 			need_space = false;
@@ -707,14 +707,14 @@ fn doc_parameter(children) {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		else {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		i += 1;
@@ -722,15 +722,15 @@ fn doc_parameter(children) {
 	doc_concat_list(parts)
 }
 
-fn doc_let_condition(children) {
+fn doc_let_condition(node) {
 	let k_let = kinds::kw_let;
 	let k_colon = kinds::colon;
 	let k_eq = kinds::assign;
 	let parts = [];
 	let need_space = false;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_let {
 			parts.push(doc_text("let"));
 			need_space = true;
@@ -747,7 +747,7 @@ fn doc_let_condition(children) {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		i += 1;
@@ -755,7 +755,7 @@ fn doc_let_condition(children) {
 	doc_concat_list(parts)
 }
 
-fn doc_let_declaration(children) {
+fn doc_let_declaration(node) {
 	let k_let = kinds::kw_let;
 	let k_colon = kinds::colon;
 	let k_eq = kinds::assign;
@@ -763,8 +763,8 @@ fn doc_let_declaration(children) {
 	let parts = [];
 	let need_space = false;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_let {
 			parts.push(doc_text("let"));
 			need_space = true;
@@ -785,7 +785,7 @@ fn doc_let_declaration(children) {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		i += 1;
@@ -793,7 +793,7 @@ fn doc_let_declaration(children) {
 	doc_concat_list(parts)
 }
 
-fn doc_operator_expression(node, children) {
+fn doc_operator_expression(node) {
 	let op_ids = [
 		kinds::assign,
 		kinds::plus_assign,
@@ -829,8 +829,8 @@ fn doc_operator_expression(node, children) {
 		let has_logical = {
 			let found = false;
 			let i = 0;
-			while i < children.len {
-				let k = children.kind(i);
+			while i < node.len {
+				let k = node.kind(i);
 				if k == kinds::and_and || k == kinds::or_or || k == kinds::amp || k == kinds::pipe || k == kinds::caret {
 					found = true;
 					break;
@@ -846,14 +846,14 @@ fn doc_operator_expression(node, children) {
 	}
 	let parts = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if op_ids.index_of(k) >= 0 {
-			let op_text = slice(children.range(i)).trim();
+			let op_text = slice(node.range(i)).trim();
 			parts.push(doc_text(" " + op_text + " "));
 		}
 		else {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -990,27 +990,27 @@ fn doc_for_boolean_expression(node, allow_wrap, indent_size, force_wrap) {
 	doc_for_boolean_operand(node, allow_wrap, indent_size, force_wrap)
 }
 
-fn doc_unary_expression(children) {
+fn doc_unary_expression(node) {
 	let op_text = "";
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::plus || k == kinds::minus || k == kinds::bang || k == kinds::star || k == kinds::amp {
-			op_text += slice(children.range(i)).trim();
+			op_text += slice(node.range(i)).trim();
 			i += 1;
 			continue;
 		}
 		if k == kinds::mutable_specifier {
-			op_text += slice(children.range(i)).trim();
+			op_text += slice(node.range(i)).trim();
 			i += 1;
 			continue;
 		}
 		break;
 	}
-	if i >= children.len {
+	if i >= node.len {
 		return doc_text(op_text);
 	}
-	let operand_doc = doc_for_child(children, i);
+	let operand_doc = doc_for_child(node, i);
 	if op_text.is_empty() {
 		return operand_doc;
 	}
@@ -1021,12 +1021,12 @@ fn doc_unary_expression(children) {
 	doc_concat_list([doc_text(op_text), operand_doc])
 }
 
-fn doc_reference_expression(children) {
+fn doc_reference_expression(node) {
 	let op_text = "";
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
-		let raw = slice(children.range(i)).trim();
+	while i < node.len {
+		let k = node.kind(i);
+		let raw = slice(node.range(i)).trim();
 		if k == kinds::amp {
 			op_text += raw;
 			i += 1;
@@ -1039,10 +1039,10 @@ fn doc_reference_expression(children) {
 		}
 		break;
 	}
-	if i >= children.len {
+	if i >= node.len {
 		return doc_text(op_text);
 	}
-	let operand_doc = doc_for_child(children, i);
+	let operand_doc = doc_for_child(node, i);
 	if op_text.is_empty() {
 		return operand_doc;
 	}
@@ -1053,32 +1053,32 @@ fn doc_reference_expression(children) {
 	doc_concat_list([doc_text(op_text), operand_doc])
 }
 
-fn doc_expression_statement(children) {
+fn doc_expression_statement(node) {
 	let k_semi = kinds::semi;
 	let k_line_comment = kinds::line_comment;
 	let parts = [];
 	let i = 0;
 	let inline_comment = ();
-	if children.len > 1 {
-		let last = children.len - 1;
-		if children.kind(last) == k_line_comment {
-			let gap = slice(range(end(children.range(last - 1)), start(children.range(last))));
+	if node.len > 1 {
+		let last = node.len - 1;
+		if node.kind(last) == k_line_comment {
+			let gap = slice(range(end(node.range(last - 1)), start(node.range(last))));
 			if gap.index_of("\n") < 0 && gap.index_of("\r") < 0 {
-				inline_comment = children.doc(last);
+				inline_comment = node.doc(last);
 			}
 		}
 	}
-	while i < children.len {
-		if i == children.len - 1 && inline_comment != () {
+	while i < node.len {
+		if i == node.len - 1 && inline_comment != () {
 			i += 1;
 			continue;
 		}
-		let k = children.kind(i);
+		let k = node.kind(i);
 		if k == k_semi {
 			parts.push(doc_text(";"));
 		}
 		else {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -1089,7 +1089,7 @@ fn doc_expression_statement(children) {
 	doc_concat_list(parts)
 }
 
-fn doc_if_expression(node, children) {
+fn doc_if_expression(node) {
 	let hits = node.find(
 		[
 			#{ kind_id: kinds::block },
@@ -1122,12 +1122,12 @@ fn doc_if_expression(node, children) {
 	doc_concat_list([doc_text("if "), cond_doc, doc_text(" "), block_doc])
 }
 
-fn doc_else_clause(children) {
+fn doc_else_clause(node) {
 	let k_else = kinds::kw_else;
 	let body_idx = -1;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k != k_else {
 			body_idx = i;
 			break;
@@ -1137,15 +1137,15 @@ fn doc_else_clause(children) {
 	if body_idx < 0 {
 		return doc_text("else");
 	}
-	doc_concat_list([doc_text("else "), doc_for_child(children, body_idx)])
+	doc_concat_list([doc_text("else "), doc_for_child(node, body_idx)])
 }
 
-fn doc_match_expression(node, children) {
+fn doc_match_expression(node) {
 	let k_block = kinds::match_block;
 	let block_idx = -1;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == k_block {
+	while i < node.len {
+		if node.kind(i) == k_block {
 			block_idx = i;
 			break;
 		}
@@ -1157,7 +1157,7 @@ fn doc_match_expression(node, children) {
 	let value_idx = -1;
 	let i = 0;
 	while i < block_idx {
-		if children.kind(i) != kinds::kw_match {
+		if node.kind(i) != kinds::kw_match {
 			value_idx = i;
 			break;
 		}
@@ -1166,23 +1166,23 @@ fn doc_match_expression(node, children) {
 	if value_idx < 0 {
 		return doc_text(text(node));
 	}
-	let value_doc = doc_for_child(children, value_idx);
-	let block_doc = doc_for_child(children, block_idx);
+	let value_doc = doc_for_child(node, value_idx);
+	let block_doc = doc_for_child(node, block_idx);
 	doc_concat_list([doc_text("match "), value_doc, doc_text(" "), block_doc])
 }
 
-fn doc_match_block(node, children) {
+fn doc_match_block(node) {
 	let k_lbrace = kinds::lbrace;
 	let k_rbrace = kinds::rbrace;
 	let inner = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_lbrace || k == k_rbrace {
 			i += 1;
 			continue;
 		}
-		inner.push(doc_for_child(children, i));
+		inner.push(doc_for_child(node, i));
 		i += 1;
 	}
 	if inner.len() == 0 {
@@ -1206,13 +1206,13 @@ fn doc_match_block(node, children) {
 	])
 }
 
-fn doc_match_arm(children) {
+fn doc_match_arm(node) {
 	let k_arrow = kinds::fat_arrow;
 	let k_comma = kinds::comma;
 	let parts = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_arrow {
 			parts.push(doc_text(" => "));
 		}
@@ -1220,7 +1220,7 @@ fn doc_match_arm(children) {
 			parts.push(doc_text(","));
 		}
 		else {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -1452,7 +1452,7 @@ fn doc_where_clause_inline(node) {
 	doc_concat_list([doc_text("where "), doc_concat_list(parts)])
 }
 
-fn doc_use_declaration(node, children) {
+fn doc_use_declaration(node) {
 	let arg = ();
 	let vis_doc = ();
 	let node_children = node.children();
@@ -1832,12 +1832,12 @@ fn doc_attribute(node) {
 	doc_concat_list(parts)
 }
 
-fn doc_attribute_item(node, children) {
+fn doc_attribute_item(node) {
 	let attr_idx = -1;
 	let node_children = node.children();
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == kinds::attribute {
+	while i < node.len {
+		if node.kind(i) == kinds::attribute {
 			attr_idx = i;
 			break;
 		}
@@ -1856,14 +1856,14 @@ fn doc_attribute_item(node, children) {
 	doc_concat_list([doc_text("#"), doc_text("["), attr_doc, doc_text("]")])
 }
 
-fn doc_macro_invocation(node, children) {
+fn doc_macro_invocation(node) {
 	let node_children = node.children();
 	let name_doc = ();
 	let tt_doc = ();
 	let tt_node = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::token_tree {
 			let child = if node_children != () && i < node_children.len() {
 				node_children[i]
@@ -1875,7 +1875,7 @@ fn doc_macro_invocation(node, children) {
 			tt_doc = doc_token_tree(child);
 		}
 		else if name_doc == () {
-			name_doc = doc_for_child(children, i);
+			name_doc = doc_for_child(node, i);
 		}
 		i += 1;
 	}
@@ -2023,13 +2023,13 @@ fn doc_macro_invocation(node, children) {
 	doc_concat_list([name_doc, doc_text("!"), tt_doc])
 }
 
-fn doc_field_declaration(children) {
+fn doc_field_declaration(node) {
 	let k_colon = kinds::colon;
 	let parts = [];
 	let need_space = false;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_colon {
 			parts.push(doc_text(": "));
 			need_space = false;
@@ -2038,7 +2038,7 @@ fn doc_field_declaration(children) {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		i += 1;
@@ -2046,20 +2046,20 @@ fn doc_field_declaration(children) {
 	doc_concat_list(parts)
 }
 
-fn doc_field_declaration_list(node, children) {
+fn doc_field_declaration_list(node) {
 	let fields = [];
 	let pending_attrs = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::attribute_item {
-			pending_attrs.push(doc_for_child(children, i));
+			pending_attrs.push(doc_for_child(node, i));
 		}
 		else if k == kinds::line_comment || k == kinds::block_comment {
-			pending_attrs.push(doc_for_child(children, i));
+			pending_attrs.push(doc_for_child(node, i));
 		}
 		else if k == kinds::field_declaration {
-			let field_doc = doc_for_child(children, i);
+			let field_doc = doc_for_child(node, i);
 			if pending_attrs.len() > 0 {
 				let parts = [];
 				let j = 0;
@@ -2106,11 +2106,11 @@ fn doc_field_declaration_list(node, children) {
 	])
 }
 
-fn doc_struct_item(node, children) {
+fn doc_struct_item(node) {
 	let list_idx = -1;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == kinds::field_declaration_list {
+	while i < node.len {
+		if node.kind(i) == kinds::field_declaration_list {
 			list_idx = i;
 			break;
 		}
@@ -2119,8 +2119,8 @@ fn doc_struct_item(node, children) {
 	if list_idx < 0 {
 		return doc_text(text(node));
 	}
-	let header_doc = doc_header_from_children(children, list_idx);
-	let list_doc = doc_for_child(children, list_idx);
+	let header_doc = doc_header_from_children(node, list_idx);
+	let list_doc = doc_for_child(node, list_idx);
 	doc_concat_list([header_doc, doc_text(" "), list_doc])
 }
 
@@ -2184,11 +2184,11 @@ fn doc_enum_variant_list(node) {
 	])
 }
 
-fn doc_enum_item(node, children) {
+fn doc_enum_item(node) {
 	let body_idx = -1;
 	let node_children = node.children();
 	let i = 0;
-	while i < children.len {
+	while i < node.len {
 		if node_children != () && i < node_children.len() {
 			let c = node_children[i];
 			if c != () && c.kind_id() == kinds::enum_variant_list {
@@ -2212,12 +2212,12 @@ fn doc_enum_item(node, children) {
 	doc_concat_list([doc_text(header), doc_text(" "), body_doc])
 }
 // doc_where_clause moved to AST-based implementation above
-fn doc_trait_item(node, children)
+fn doc_trait_item(node)
 {
 	let body_idx = -1;
 	let node_children = node.children();
 	let i = 0;
-	while i < children.len {
+	while i < node.len {
 		if node_children != () && i < node_children.len() {
 			let c = node_children[i];
 			if c != () && c.kind_id() == kinds::declaration_list {
@@ -2230,23 +2230,23 @@ fn doc_trait_item(node, children)
 	if body_idx < 0 {
 		return doc_text(text(node));
 	}
-	let header = normalize_space(slice(range(start(byte_range(node)), start(children.range(body_idx)))));
-	let body_doc = doc_for_child(children, body_idx);
+	let header = normalize_space(slice(range(start(byte_range(node)), start(node.range(body_idx)))));
+	let body_doc = doc_for_child(node, body_idx);
 	doc_concat_list([doc_text(header), doc_text(" "), body_doc])
 }
 
-fn doc_declaration_list(children) {
+fn doc_declaration_list(node) {
 	let k_lbrace = kinds::lbrace;
 	let k_rbrace = kinds::rbrace;
 	let inner = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_lbrace || k == k_rbrace {
 			i += 1;
 			continue;
 		}
-		inner.push(doc_for_child(children, i));
+		inner.push(doc_for_child(node, i));
 		i += 1;
 	}
 	if inner.len() == 0 {
@@ -2270,13 +2270,13 @@ fn doc_declaration_list(children) {
 	])
 }
 
-fn doc_field_initializer(children) {
+fn doc_field_initializer(node) {
 	let k_colon = kinds::colon;
 	let parts = [];
 	let need_space = false;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_colon {
 			parts.push(doc_text(": "));
 			need_space = false;
@@ -2285,7 +2285,7 @@ fn doc_field_initializer(children) {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		i += 1;
@@ -2293,13 +2293,13 @@ fn doc_field_initializer(children) {
 	doc_concat_list(parts)
 }
 
-fn doc_field_initializer_list(node, children) {
+fn doc_field_initializer_list(node) {
 	let fields = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::field_initializer || k == kinds::shorthand_field_initializer || k == kinds::base_field_initializer {
-			fields.push(doc_for_child(children, i));
+			fields.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -2338,11 +2338,11 @@ fn doc_field_initializer_list(node, children) {
 	doc_concat_list([doc_text("{ "), doc_concat_list(parts), doc_text(" }")])
 }
 
-fn doc_struct_expression(node, children) {
+fn doc_struct_expression(node) {
 	let list_idx = -1;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == kinds::field_initializer_list {
+	while i < node.len {
+		if node.kind(i) == kinds::field_initializer_list {
 			list_idx = i;
 			break;
 		}
@@ -2351,16 +2351,16 @@ fn doc_struct_expression(node, children) {
 	if list_idx < 0 {
 		return doc_text(text(node));
 	}
-	let header_doc = doc_header_from_children(children, list_idx);
-	let list_doc = doc_for_child(children, list_idx);
+	let header_doc = doc_header_from_children(node, list_idx);
+	let list_doc = doc_for_child(node, list_idx);
 	doc_concat_list([header_doc, doc_text(" "), list_doc])
 }
 
-fn doc_impl_item(node, children) {
+fn doc_impl_item(node) {
 	let list_idx = -1;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::declaration_list || k == kinds::block {
 			list_idx = i;
 			break;
@@ -2370,16 +2370,16 @@ fn doc_impl_item(node, children) {
 	if list_idx < 0 {
 		return doc_text(text(node));
 	}
-	let header_doc = doc_header_from_children(children, list_idx);
-	let list_doc = doc_for_child(children, list_idx);
+	let header_doc = doc_header_from_children(node, list_idx);
+	let list_doc = doc_for_child(node, list_idx);
 	doc_concat_list([header_doc, doc_text(" "), list_doc])
 }
 
-fn doc_for_expression(node, children) {
+fn doc_for_expression(node) {
 	let block_idx = -1;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == kinds::block {
+	while i < node.len {
+		if node.kind(i) == kinds::block {
 			block_idx = i;
 			break;
 		}
@@ -2388,16 +2388,16 @@ fn doc_for_expression(node, children) {
 	if block_idx < 0 {
 		return doc_text(text(node));
 	}
-	let header_doc = doc_header_from_children(children, block_idx);
-	let block_doc = doc_for_child(children, block_idx);
+	let header_doc = doc_header_from_children(node, block_idx);
+	let block_doc = doc_for_child(node, block_idx);
 	doc_concat_list([header_doc, doc_text(" "), block_doc])
 }
 
-fn doc_while_expression(node, children) {
+fn doc_while_expression(node) {
 	let block_idx = -1;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == kinds::block {
+	while i < node.len {
+		if node.kind(i) == kinds::block {
 			block_idx = i;
 			break;
 		}
@@ -2406,16 +2406,16 @@ fn doc_while_expression(node, children) {
 	if block_idx < 0 {
 		return doc_text(text(node));
 	}
-	let header_doc = doc_header_from_children(children, block_idx);
-	let block_doc = doc_for_child(children, block_idx);
+	let header_doc = doc_header_from_children(node, block_idx);
+	let block_doc = doc_for_child(node, block_idx);
 	doc_concat_list([header_doc, doc_text(" "), block_doc])
 }
 
-fn doc_loop_expression(node, children) {
+fn doc_loop_expression(node) {
 	let block_idx = -1;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == kinds::block {
+	while i < node.len {
+		if node.kind(i) == kinds::block {
 			block_idx = i;
 			break;
 		}
@@ -2424,17 +2424,17 @@ fn doc_loop_expression(node, children) {
 	if block_idx < 0 {
 		return doc_text(text(node));
 	}
-	let header_doc = doc_header_from_children(children, block_idx);
-	let block_doc = doc_for_child(children, block_idx);
+	let header_doc = doc_header_from_children(node, block_idx);
+	let block_doc = doc_for_child(node, block_idx);
 	doc_concat_list([header_doc, doc_text(" "), block_doc])
 }
 
-fn doc_block_with_keyword(node, children, keyword) {
+fn doc_block_with_keyword(node, keyword) {
 	let block_idx = -1;
 	let has_move = false;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::kw_move {
 			has_move = true;
 		}
@@ -2453,23 +2453,23 @@ fn doc_block_with_keyword(node, children, keyword) {
 	else {
 		keyword
 	};
-	let block_range = children.range(block_idx);
+	let block_range = node.range(block_idx);
 	let inline = inline_block_expression_doc(block_range);
 	if inline != () {
 		return doc_concat_list([doc_text(keyword_text), doc_text(" { "), inline, doc_text(" }")]);
 	}
-	let block_doc = doc_for_child(children, block_idx);
+	let block_doc = doc_for_child(node, block_idx);
 	doc_concat_list([doc_text(keyword_text), doc_text(" "), block_doc])
 }
 
-fn doc_break_expression(children) {
+fn doc_break_expression(node) {
 	let k_break = kinds::kw_break;
 	let k_semi = kinds::semi;
 	let parts = [];
 	let need_space = false;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_break {
 			parts.push(doc_text("break"));
 			need_space = true;
@@ -2482,7 +2482,7 @@ fn doc_break_expression(children) {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		i += 1;
@@ -2490,14 +2490,14 @@ fn doc_break_expression(children) {
 	doc_concat_list(parts)
 }
 
-fn doc_continue_expression(children) {
+fn doc_continue_expression(node) {
 	let k_continue = kinds::kw_continue;
 	let k_semi = kinds::semi;
 	let parts = [];
 	let need_space = false;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_continue {
 			parts.push(doc_text("continue"));
 			need_space = true;
@@ -2510,7 +2510,7 @@ fn doc_continue_expression(children) {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		i += 1;
@@ -2518,13 +2518,13 @@ fn doc_continue_expression(children) {
 	doc_concat_list(parts)
 }
 
-fn doc_await_expression(node, children) {
+fn doc_await_expression(node) {
 	let expr_doc = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k != kinds::kw_await && k != kinds::dot {
-			expr_doc = doc_for_child(children, i);
+			expr_doc = doc_for_child(node, i);
 			break;
 		}
 		i += 1;
@@ -2535,11 +2535,11 @@ fn doc_await_expression(node, children) {
 	doc_concat_list([expr_doc, doc_text(".await")])
 }
 
-fn doc_index_expression(children) {
+fn doc_index_expression(node) {
 	let parts = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::lbracket {
 			parts.push(doc_text("["));
 		}
@@ -2547,38 +2547,38 @@ fn doc_index_expression(children) {
 			parts.push(doc_text("]"));
 		}
 		else {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
 	doc_concat_list(parts)
 }
 
-fn doc_range_expression(children) {
+fn doc_range_expression(node) {
 	let parts = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::range || k == kinds::range_eq {
-			let op = slice(children.range(i)).trim();
+			let op = slice(node.range(i)).trim();
 			parts.push(doc_text(op));
 		}
 		else {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
 	doc_concat_list(parts)
 }
 
-fn doc_bracket_list(node, children, open_bracket, close_bracket, k_open, k_close) {
+fn doc_bracket_list(node, open_bracket, close_bracket, k_open, k_close) {
 	let k_comma = kinds::comma;
 	let items = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k != k_open && k != k_close && k != k_comma {
-			items.push(doc_for_child(children, i));
+			items.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -2617,44 +2617,44 @@ fn doc_bracket_list(node, children, open_bracket, close_bracket, k_open, k_close
 	doc_concat_list([doc_text(open_bracket), doc_concat_list(parts), doc_text(close_bracket)])
 }
 
-fn doc_array_expression(node, children) {
-	doc_bracket_list(node, children, "[", "]", kinds::lbracket, kinds::rbracket)
+fn doc_array_expression(node) {
+	doc_bracket_list(node, "[", "]", kinds::lbracket, kinds::rbracket)
 }
 
-fn doc_tuple_expression(node, children) {
-	doc_bracket_list(node, children, "(", ")", kinds::lparen, kinds::rparen)
+fn doc_tuple_expression(node) {
+	doc_bracket_list(node, "(", ")", kinds::lparen, kinds::rparen)
 }
 
-fn doc_tuple_pattern(node, children) {
-	doc_bracket_list(node, children, "(", ")", kinds::lparen, kinds::rparen)
+fn doc_tuple_pattern(node) {
+	doc_bracket_list(node, "(", ")", kinds::lparen, kinds::rparen)
 }
 
-fn doc_type_cast_expression(children) {
+fn doc_type_cast_expression(node) {
 	let k_as = kinds::kw_as;
 	let parts = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_as {
 			parts.push(doc_text(" as "));
 		}
 		else {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
 	doc_concat_list(parts)
 }
 
-fn doc_simple_item_declaration(children, keyword, keyword_kind) {
+fn doc_simple_item_declaration(node, keyword, keyword_kind) {
 	let k_colon = kinds::colon;
 	let k_eq = kinds::assign;
 	let k_semi = kinds::semi;
 	let parts = [];
 	let need_space = false;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == keyword_kind {
 			if need_space {
 				parts.push(doc_text(" "));
@@ -2678,7 +2678,7 @@ fn doc_simple_item_declaration(children, keyword, keyword_kind) {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		i += 1;
@@ -2686,11 +2686,11 @@ fn doc_simple_item_declaration(children, keyword, keyword_kind) {
 	doc_concat_list(parts)
 }
 
-fn doc_array_type(children) {
+fn doc_array_type(node) {
 	let parts = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::lbracket {
 			parts.push(doc_text("["));
 		}
@@ -2701,30 +2701,30 @@ fn doc_array_type(children) {
 			parts.push(doc_text("; "));
 		}
 		else {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
 	doc_concat_list(parts)
 }
 
-fn doc_const_item(children) {
-	doc_simple_item_declaration(children, "const", kinds::kw_const)
+fn doc_const_item(node) {
+	doc_simple_item_declaration(node, "const", kinds::kw_const)
 }
 
-fn doc_static_item(children) {
-	doc_simple_item_declaration(children, "static", kinds::kw_static)
+fn doc_static_item(node) {
+	doc_simple_item_declaration(node, "static", kinds::kw_static)
 }
 
-fn doc_type_item(children) {
-	doc_simple_item_declaration(children, "type", kinds::kw_type)
+fn doc_type_item(node) {
+	doc_simple_item_declaration(node, "type", kinds::kw_type)
 }
 
-fn doc_mod_item(node, children) {
+fn doc_mod_item(node) {
 	let body_idx = -1;
 	let node_children = node.children();
 	let i = 0;
-	while i < children.len {
+	while i < node.len {
 		if node_children != () && i < node_children.len() {
 			let c = node_children[i];
 			if c != () && (c.kind_id() == kinds::declaration_list || c.kind_id() == kinds::block) {
@@ -2737,16 +2737,16 @@ fn doc_mod_item(node, children) {
 	if body_idx < 0 {
 		return doc_text(normalize_space(text(node)));
 	}
-	let header = normalize_space(slice(range(start(byte_range(node)), start(children.range(body_idx)))));
-	let body_doc = doc_for_child(children, body_idx);
+	let header = normalize_space(slice(range(start(byte_range(node)), start(node.range(body_idx)))));
+	let body_doc = doc_for_child(node, body_idx);
 	doc_concat_list([doc_text(header), doc_text(" "), body_doc])
 }
 
-fn doc_union_item(node, children) {
+fn doc_union_item(node) {
 	let list_idx = -1;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == kinds::field_declaration_list {
+	while i < node.len {
+		if node.kind(i) == kinds::field_declaration_list {
 			list_idx = i;
 			break;
 		}
@@ -2755,8 +2755,8 @@ fn doc_union_item(node, children) {
 	if list_idx < 0 {
 		return doc_text(text(node));
 	}
-	let header_doc = doc_header_from_children(children, list_idx);
-	let list_doc = doc_for_child(children, list_idx);
+	let header_doc = doc_header_from_children(node, list_idx);
+	let list_doc = doc_for_child(node, list_idx);
 	doc_concat_list([header_doc, doc_text(" "), list_doc])
 }
 
@@ -2764,11 +2764,11 @@ fn doc_extern_crate_declaration(node) {
 	doc_text(normalize_space(text(node)))
 }
 
-fn doc_foreign_mod_item(node, children) {
+fn doc_foreign_mod_item(node) {
 	let body_idx = -1;
 	let node_children = node.children();
 	let i = 0;
-	while i < children.len {
+	while i < node.len {
 		if node_children != () && i < node_children.len() {
 			let c = node_children[i];
 			if c != () && c.kind_id() == kinds::declaration_list {
@@ -2781,8 +2781,8 @@ fn doc_foreign_mod_item(node, children) {
 	if body_idx < 0 {
 		return doc_text(text(node));
 	}
-	let header = normalize_space(slice(range(start(byte_range(node)), start(children.range(body_idx)))));
-	let body_doc = doc_for_child(children, body_idx);
+	let header = normalize_space(slice(range(start(byte_range(node)), start(node.range(body_idx)))));
+	let body_doc = doc_for_child(node, body_idx);
 	doc_concat_list([doc_text(header), doc_text(" "), body_doc])
 }
 
@@ -2804,7 +2804,7 @@ fn macro_needs_space(tt_node) {
 	false
 }
 
-fn doc_macro_definition(node, children) {
+fn doc_macro_definition(node) {
 	let raw = text(node).trim();
 	if raw.starts_with("macro_rules!") {
 		let lbrace = raw.index_of("{");
@@ -2925,14 +2925,14 @@ fn doc_macro_definition(node, children) {
 	let tt_doc = ();
 	let tt_range = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::token_tree {
 			if node_children != () && i < node_children.len() {
 				tt_node = node_children[i];
 			}
-			tt_doc = doc_for_child(children, i);
-			tt_range = children.range(i);
+			tt_doc = doc_for_child(node, i);
+			tt_range = node.range(i);
 			break;
 		}
 		i += 1;
@@ -2996,11 +2996,11 @@ fn doc_macro_definition(node, children) {
 	doc_concat_list([doc_text(header), tt_doc])
 }
 
-fn doc_macro_rule(children) {
+fn doc_macro_rule(node) {
 	let parts = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::fat_arrow {
 			parts.push(doc_text(" => "));
 		}
@@ -3008,30 +3008,30 @@ fn doc_macro_rule(children) {
 			parts.push(doc_text(";"));
 		}
 		else if k == kinds::token_tree {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		else {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
 	doc_concat_list(parts)
 }
 
-fn doc_macro_rules_definition(node, children) {
+fn doc_macro_rules_definition(node) {
 	let node_children = node.children();
 	let tt_node = ();
 	let tt_doc = ();
 	let tt_range = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::token_tree {
 			if node_children != () && i < node_children.len() {
 				tt_node = node_children[i];
 			}
-			tt_doc = doc_for_child(children, i);
-			tt_range = children.range(i);
+			tt_doc = doc_for_child(node, i);
+			tt_range = node.range(i);
 			break;
 		}
 		i += 1;
@@ -3046,28 +3046,28 @@ fn doc_macro_rules_definition(node, children) {
 	doc_concat_list([doc_text(header), tt_doc])
 }
 
-fn doc_try_expression(children) {
+fn doc_try_expression(node) {
 	let parts = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::qmark {
 			parts.push(doc_text("?"));
 		}
 		else {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
 	doc_concat_list(parts)
 }
 
-fn doc_return_expression(children) {
+fn doc_return_expression(node) {
 	let parts = [];
 	let i = 0;
 	let saw_return = false;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::kw_return {
 			parts.push(doc_text("return"));
 			saw_return = true;
@@ -3077,14 +3077,14 @@ fn doc_return_expression(children) {
 				parts.push(doc_text(" "));
 				saw_return = false;
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
 	doc_concat_list(parts)
 }
 
-fn doc_closure_expression(node, children) {
+fn doc_closure_expression(node) {
 	let node_children = node.children();
 	if node_children == () || node_children.len() == 0 {
 		return doc_text(text(node));
@@ -3109,7 +3109,7 @@ fn doc_closure_expression(node, children) {
 					parts.push(cached);
 				}
 				else if k == kinds::closure_parameters {
-					parts.push(doc_closure_parameters(child.children()));
+					parts.push(doc_closure_parameters(child));
 				}
 				else if k == kinds::line_comment || k == kinds::block_comment {
 					parts.push(doc_closure_comment_child(child));
@@ -3131,19 +3131,19 @@ fn doc_closure_expression(node, children) {
 	doc_concat_list(parts)
 }
 
-fn doc_closure_parameters(children) {
+fn doc_closure_parameters(node) {
 	let parts = [];
 	let need_space = false;
 	let i = 0;
-	while i < children.len {
-		let cached = children.doc(i);
+	while i < node.len {
+		let cached = node.doc(i);
 		if cached != () {
 			parts.push(cached);
 			need_space = false;
 			i += 1;
 			continue;
 		}
-		let k = children.kind(i);
+		let k = node.kind(i);
 		if k == kinds::pipe {
 			parts.push(doc_text("|"));
 			need_space = false;
@@ -3156,14 +3156,14 @@ fn doc_closure_parameters(children) {
 			if parts.len() > 0 {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		else {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		i += 1;
@@ -3519,21 +3519,21 @@ fn inline_block_expression_doc(block_range) {
 	doc_text(inner)
 }
 
-fn doc_function_item(node, children) {
+fn doc_function_item(node) {
 	let k_block = kinds::block;
 	let block_idx = -1;
 	let where_idx = -1;
 	let node_children = node.children();
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == k_block {
+	while i < node.len {
+		if node.kind(i) == k_block {
 			block_idx = i;
 			break;
 		}
 		i += 1;
 	}
 	i = 0;
-	while i < children.len {
+	while i < node.len {
 		if node_children != () && i < node_children.len() {
 			let c = node_children[i];
 			if c != () && c.kind_id() == kinds::where_clause {
@@ -3556,7 +3556,7 @@ fn doc_function_item(node, children) {
 		block_idx
 	};
 	while i < header_end {
-		let k = children.kind(i);
+		let k = node.kind(i);
 		let node_kind = if node_children != () && i < node_children.len() {
 			node_children[i].kind_id()
 		}
@@ -3580,19 +3580,19 @@ fn doc_function_item(node, children) {
 			need_space = false;
 		}
 		else if k == kinds::parameters {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = false;
 		}
 		else {
 			if need_space {
 				parts.push(doc_text(" "));
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			need_space = true;
 		}
 		i += 1;
 	}
-	let block_doc = doc_for_child(children, block_idx);
+	let block_doc = doc_for_child(node, block_idx);
 	if where_idx >= 0 && where_idx < block_idx {
 		let where_node = node_children[where_idx];
 		let pred_count = {
@@ -3938,13 +3938,13 @@ fn doc_chain_expression(root) {
 	])
 }
 
-fn doc_call_expression_simple(node, children) {
+fn doc_call_expression_simple(node) {
 	let k_args = kinds::arguments;
 	let fn_idx = -1;
 	let args_idx = -1;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_args {
 			args_idx = i;
 		}
@@ -3956,25 +3956,25 @@ fn doc_call_expression_simple(node, children) {
 	if args_idx < 0 || fn_idx < 0 {
 		return doc_text(text(node));
 	}
-	let fn_doc = doc_for_child(children, fn_idx);
-	let args_doc = doc_for_child(children, args_idx);
+	let fn_doc = doc_for_child(node, fn_idx);
+	let args_doc = doc_for_child(node, args_idx);
 	doc_concat_list([fn_doc, args_doc])
 }
 
-fn doc_call_expression(node, children) {
+fn doc_call_expression(node) {
 	let root = chain_root(node);
 	if same_node(root, node) {
 		return doc_chain_expression(root);
 	}
-	doc_call_expression_simple(node, children)
+	doc_call_expression_simple(node)
 }
 
-fn doc_field_expression_simple(node, children) {
+fn doc_field_expression_simple(node) {
 	let value_idx = -1;
 	let field_idx = -1;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::field_identifier {
 			field_idx = i;
 		}
@@ -3987,24 +3987,24 @@ fn doc_field_expression_simple(node, children) {
 		return doc_text(text(node));
 	}
 	doc_concat_list([
-		doc_for_child(children, value_idx),
+		doc_for_child(node, value_idx),
 		doc_text("."),
-		doc_for_child(children, field_idx)
+		doc_for_child(node, field_idx)
 	])
 }
 
-fn doc_field_expression(node, children) {
+fn doc_field_expression(node) {
 	let root = chain_root(node);
 	if same_node(root, node) {
 		return doc_chain_expression(root);
 	}
-	doc_field_expression_simple(node, children)
+	doc_field_expression_simple(node)
 }
 
-fn build_doc(node, children) {
+fn build_doc(node) {
 	let k = node.kind_id();
 	if k == kinds::source_file {
-		return doc_source_file(node, children);
+		return doc_source_file(node);
 	}
 	if k == kinds::line_comment {
 		let comment_text = text(node);
@@ -4023,112 +4023,112 @@ fn build_doc(node, children) {
 		return doc_text(text(node));
 	}
 	if k == kinds::block {
-		return doc_block(node, children);
+		return doc_block(node);
 	}
 	if k == kinds::if_expression {
-		return doc_if_expression(node, children);
+		return doc_if_expression(node);
 	}
 	if k == kinds::else_clause {
-		return doc_else_clause(children);
+		return doc_else_clause(node);
 	}
 	if k == kinds::match_expression {
-		return doc_match_expression(node, children);
+		return doc_match_expression(node);
 	}
 	if k == kinds::match_block {
-		return doc_match_block(node, children);
+		return doc_match_block(node);
 	}
 	if k == kinds::match_arm {
-		return doc_match_arm(children);
+		return doc_match_arm(node);
 	}
 	if k == kinds::attribute_item {
-		return doc_attribute_item(node, children);
+		return doc_attribute_item(node);
 	}
 	if k == kinds::macro_invocation {
-		return doc_macro_invocation(node, children);
+		return doc_macro_invocation(node);
 	}
 	if k == kinds::token_tree {
 		return doc_token_tree(node);
 	}
 	if k == kinds::use_declaration {
-		return doc_use_declaration(node, children);
+		return doc_use_declaration(node);
 	}
 	if k == kinds::struct_item {
-		return doc_struct_item(node, children);
+		return doc_struct_item(node);
 	}
 	if k == kinds::enum_item {
-		return doc_enum_item(node, children);
+		return doc_enum_item(node);
 	}
 	if k == kinds::trait_item {
-		return doc_trait_item(node, children);
+		return doc_trait_item(node);
 	}
 	if k == kinds::mod_item {
-		return doc_mod_item(node, children);
+		return doc_mod_item(node);
 	}
 	if k == kinds::const_item {
-		return doc_const_item(children);
+		return doc_const_item(node);
 	}
 	if k == kinds::static_item {
-		return doc_static_item(children);
+		return doc_static_item(node);
 	}
 	if k == kinds::type_item {
-		return doc_type_item(children);
+		return doc_type_item(node);
 	}
 	if k == kinds::union_item {
-		return doc_union_item(node, children);
+		return doc_union_item(node);
 	}
 	if k == kinds::extern_crate_declaration {
 		return doc_extern_crate_declaration(node);
 	}
 	if k == kinds::foreign_mod_item {
-		return doc_foreign_mod_item(node, children);
+		return doc_foreign_mod_item(node);
 	}
 	if k == kinds::macro_definition {
-		return doc_macro_definition(node, children);
+		return doc_macro_definition(node);
 	}
 	if k == kinds::declaration_list {
-		return doc_declaration_list(children);
+		return doc_declaration_list(node);
 	}
 	if k == kinds::field_declaration_list {
-		return doc_field_declaration_list(node, children);
+		return doc_field_declaration_list(node);
 	}
 	if k == kinds::field_declaration {
-		return doc_field_declaration(children);
+		return doc_field_declaration(node);
 	}
 	if k == kinds::struct_expression {
-		return doc_struct_expression(node, children);
+		return doc_struct_expression(node);
 	}
 	if k == kinds::field_initializer_list {
-		return doc_field_initializer_list(node, children);
+		return doc_field_initializer_list(node);
 	}
 	if k == kinds::field_initializer {
-		return doc_field_initializer(children);
+		return doc_field_initializer(node);
 	}
 	if k == kinds::impl_item {
-		return doc_impl_item(node, children);
+		return doc_impl_item(node);
 	}
 	if k == kinds::for_expression {
-		return doc_for_expression(node, children);
+		return doc_for_expression(node);
 	}
 	if k == kinds::while_expression {
-		return doc_while_expression(node, children);
+		return doc_while_expression(node);
 	}
 	if k == kinds::loop_expression {
-		return doc_loop_expression(node, children);
+		return doc_loop_expression(node);
 	}
 	if k == kinds::break_expression {
-		return doc_break_expression(children);
+		return doc_break_expression(node);
 	}
 	if k == kinds::continue_expression {
-		return doc_continue_expression(children);
+		return doc_continue_expression(node);
 	}
 	if k == kinds::return_expression {
-		return doc_return_expression(children);
+		return doc_return_expression(node);
 	}
 	if k == kinds::call_expression {
-		return doc_call_expression(node, children);
+		return doc_call_expression(node);
 	}
 	if k == kinds::field_expression {
-		return doc_field_expression(node, children);
+		return doc_field_expression(node);
 	}
 	if k == kinds::generic_type {
 		return doc_generic_type(node);
@@ -4137,79 +4137,79 @@ fn build_doc(node, children) {
 		return doc_type_arguments(node);
 	}
 	if k == kinds::arguments {
-		return doc_arguments(node, children);
+		return doc_arguments(node);
 	}
 	if k == kinds::parameters {
-		return doc_parameters(node, children);
+		return doc_parameters(node);
 	}
 	if k == kinds::closure_parameters {
-		return doc_closure_parameters(children);
+		return doc_closure_parameters(node);
 	}
 	if k == kinds::parameter {
-		return doc_parameter(children);
+		return doc_parameter(node);
 	}
 	if k == kinds::let_condition {
-		return doc_let_condition(children);
+		return doc_let_condition(node);
 	}
 	if k == kinds::let_declaration {
-		return doc_let_declaration(children);
+		return doc_let_declaration(node);
 	}
 	if k == kinds::binary_expression || k == kinds::assignment_expression || k == kinds::compound_assignment_expr {
-		return doc_operator_expression(node, children);
+		return doc_operator_expression(node);
 	}
 	if k == kinds::unary_expression {
-		return doc_unary_expression(children);
+		return doc_unary_expression(node);
 	}
 	if k == kinds::reference_expression {
-		return doc_reference_expression(children);
+		return doc_reference_expression(node);
 	}
 	if k == kinds::await_expression {
-		return doc_await_expression(node, children);
+		return doc_await_expression(node);
 	}
 	if k == kinds::index_expression {
-		return doc_index_expression(children);
+		return doc_index_expression(node);
 	}
 	if k == kinds::range_expression {
-		return doc_range_expression(children);
+		return doc_range_expression(node);
 	}
 	if k == kinds::array_expression {
-		return doc_array_expression(node, children);
+		return doc_array_expression(node);
 	}
 	if k == kinds::tuple_expression {
-		return doc_tuple_expression(node, children);
+		return doc_tuple_expression(node);
 	}
 	if k == kinds::tuple_pattern {
-		return doc_tuple_pattern(node, children);
+		return doc_tuple_pattern(node);
 	}
 	if k == kinds::type_cast_expression {
-		return doc_type_cast_expression(children);
+		return doc_type_cast_expression(node);
 	}
 	if k == kinds::array_type {
-		return doc_array_type(children);
+		return doc_array_type(node);
 	}
 	if k == kinds::expression_statement {
-		return doc_expression_statement(children);
+		return doc_expression_statement(node);
 	}
 	if k == kinds::parenthesized_expression {
-		return doc_parenthesized_expression(node, children);
+		return doc_parenthesized_expression(node);
 	}
 	if k == kinds::try_expression {
-		return doc_try_expression(children);
+		return doc_try_expression(node);
 	}
 	if k == kinds::unsafe_block {
-		return doc_block_with_keyword(node, children, "unsafe");
+		return doc_block_with_keyword(node, "unsafe");
 	}
 	if k == kinds::async_block {
-		return doc_block_with_keyword(node, children, "async");
+		return doc_block_with_keyword(node, "async");
 	}
 	if k == kinds::try_block {
-		return doc_block_with_keyword(node, children, "try");
+		return doc_block_with_keyword(node, "try");
 	}
 	if k == kinds::closure_expression {
-		return doc_closure_expression(node, children);
+		return doc_closure_expression(node);
 	}
 	if k == kinds::function_item {
-		return doc_function_item(node, children);
+		return doc_function_item(node);
 	}
 	doc_text(text(node))
 }
@@ -4292,8 +4292,8 @@ let root_doc = walk(
 	"rust",
 	kinds::list,
 	// queries,
-	|node, children| {
-		build_doc(node, children)
+	|node, _children| {
+		build_doc(node)
 	}
 );
 let end_docs = now_ms();
