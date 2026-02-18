@@ -406,7 +406,8 @@ fn field_value_node(node) {
 			}
 		}
 		i += 1;
-	}()
+	}
+	()
 }
 
 fn doc_source_file(node) {

@@ -1269,12 +1269,12 @@ fn doc_method_invocation(node) {
 				if child != () {
 					let k = child.kind_id();
 					if k == kinds::type_arguments {
-				out = out.trim_end();
-				out += text_type_arguments(child);
-			}
-			else {
-				out += slice(byte_range(child)).trim();
-			}
+						out = out.trim_end();
+						out += text_type_arguments(child);
+					}
+					else {
+						out += slice(byte_range(child)).trim();
+					}
 				}
 				idx += 1;
 			}
@@ -2831,8 +2831,7 @@ fn doc_method_like(node, body_capture) {
 	else {
 		doc_for_child(node, params_idx)
 	};
-	let header_suffix = slice(range(end(node.range(params_idx)), start(node.range(body_idx))))
-		.trim();
+	let header_suffix = slice(range(end(node.range(params_idx)), start(node.range(body_idx)))).trim();
 	let body_doc = doc_for_child(node, body_idx);
 	let header_docs = [];
 	if header_prefix.index_of("@") >= 0 {

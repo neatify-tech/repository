@@ -403,7 +403,12 @@ fn doc_element(node) {
 			if d != () {
 				inline_docs.push(d);
 			}
-			let next_idx = if j + 1 < content.len() { content[j + 1] } else { -1 };
+			let next_idx = if j + 1 < content.len() {
+				content[j + 1]
+			}
+			else {
+				-1
+			};
 			if next_idx >= 0 {
 				let next_kind = node.kind(next_idx);
 				if (k == kinds::text || k == kinds::raw_text) && next_kind == kinds::interpolation {

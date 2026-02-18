@@ -58,7 +58,8 @@ fn inline_comment_doc_from_gap(gap, line_prefix, block_start, block_end) {
 			let raw = gap.sub_string(block_idx, end_idx + block_end.len() - block_idx).trim();
 			return doc_text(raw);
 		}
-	}()
+	}
+	()
 }
 
 fn node_for_range_kind(language, parent_node, target_range, kind_name) {
@@ -76,7 +77,8 @@ fn node_for_range_kind(language, parent_node, target_range, kind_name) {
 		if start(r) == start(target_range) && end(r) == end(target_range) {
 			return n;
 		}
-	}()
+	}
+	()
 }
 
 fn inline_comment_doc_between(language, header_end, block_start, line_comment_name, block_comment_name, line_prefix, block_prefix, block_suffix) {
@@ -125,6 +127,7 @@ fn inline_comment_doc_between(language, header_end, block_start, line_comment_na
 			return comments::doc_line_comment(comment_node, line_prefix);
 		}
 		return comments::doc_block_comment(comment_node, block_prefix, block_suffix);
-	}()
+	}
+	()
 }
 // Exports are implicit via module import.

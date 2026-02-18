@@ -139,7 +139,12 @@ fn normalize_css_text(text, space_after_colon, space_after_comma, space_before_p
 		}
 		if pending_space {
 			pending_space = false;
-			let last = if out.len() > 0 { out.sub_string(out.len() - 1, 1) } else { "" };
+			let last = if out.len() > 0 {
+				out.sub_string(out.len() - 1, 1)
+			}
+			else {
+				""
+			};
 			if last != " " && last != "\t" && last != "," {
 				out = out + " ";
 			}

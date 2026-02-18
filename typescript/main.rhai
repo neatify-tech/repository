@@ -978,7 +978,12 @@ fn doc_import_statement(node) {
 	else {
 		()
 	};
-	let prefix = if is_type_import { "import type " } else { "import " };
+	let prefix = if is_type_import {
+		"import type "
+	}
+	else {
+		"import "
+	};
 	if clause_doc == () {
 		return doc_text(text(node));
 	}
@@ -2197,18 +2202,18 @@ fn doc_unary_expression(node) {
 		if k == kinds::plus || k == kinds::minus || k == kinds::bang {
 			parts.push(doc_text(slice(node.range(i)).trim()));
 		}
-	else if k == kinds::kw_typeof {
-		parts.push(doc_text("typeof "));
-	}
-	else if k == kinds::kw_void {
-		parts.push(doc_text("void "));
-	}
-	else if k == kinds::kw_delete {
-		parts.push(doc_text("delete "));
-	}
-	else if k == kinds::kw_await {
-		parts.push(doc_text("await "));
-	}
+		else if k == kinds::kw_typeof {
+			parts.push(doc_text("typeof "));
+		}
+		else if k == kinds::kw_void {
+			parts.push(doc_text("void "));
+		}
+		else if k == kinds::kw_delete {
+			parts.push(doc_text("delete "));
+		}
+		else if k == kinds::kw_await {
+			parts.push(doc_text("await "));
+		}
 		else {
 			parts.push(doc_for_child(node, i));
 		}

@@ -155,7 +155,12 @@ fn find_wrap_break(text, max_len, backtrack_limit, overflow_limit) {
 	}
 	let last_safe = -1;
 	let i = 0;
-	let upper = if max_len < len { max_len } else { len - 1 };
+	let upper = if max_len < len {
+		max_len
+	}
+	else {
+		len - 1
+	};
 	while i <= upper {
 		let ch = text.sub_string(i, 1);
 		if is_safe_wrap_char(ch) {

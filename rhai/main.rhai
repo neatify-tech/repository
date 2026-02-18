@@ -124,7 +124,8 @@ fn dot_value_node(node) {
 			}
 		}
 		i += 1;
-	}()
+	}
+	()
 }
 
 fn dot_access_nodes(node) {
@@ -653,8 +654,18 @@ fn doc_block(node) {
 			let next_idx = inner_idx[j + 1];
 			let current_text = slice(node.range(idx)).trim();
 			let next_text = slice(node.range(next_idx)).trim();
-			let current = if kids.len() > idx { kids[idx] } else { () };
-			let next = if kids.len() > next_idx { kids[next_idx] } else { () };
+			let current = if kids.len() > idx {
+				kids[idx]
+			}
+			else {
+				()
+			};
+			let next = if kids.len() > next_idx {
+				kids[next_idx]
+			}
+			else {
+				()
+			};
 			if !should_join_split_expr_stmt(current, next) {
 				inner_doc.push(doc_hardline());
 			}

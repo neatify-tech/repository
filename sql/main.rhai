@@ -432,7 +432,7 @@ fn doc_select_clause_body(node) {
 					let c_start = entry[0];
 					let c_end = entry[1];
 					if c_start >= item_start && c_end <= start(r) {
-					let case_doc = doc_for_child(node, entry[2]);
+						let case_doc = doc_for_child(node, entry[2]);
 						let tail = slice(range(c_end, start(r))).trim();
 						if tail != "" {
 							doc = doc_concat_list([case_doc, doc_text(" " + tail)]);
