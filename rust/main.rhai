@@ -2571,7 +2571,7 @@ fn doc_range_expression(node) {
 	doc_concat_list(parts)
 }
 
-fn doc_bracket_list(node, open_bracket, close_bracket, k_open, k_close) {
+fn doc_bracket_list(node, open_bracket, close_bracket, k_open, k_close, force_singleton_trailing_comma) {
 	let k_comma = kinds::comma;
 	let items = [];
 	let i = 0;
@@ -2603,6 +2603,9 @@ fn doc_bracket_list(node, open_bracket, close_bracket, k_open, k_close) {
 		}
 		j += 1;
 	}
+	if items.len() == 1 && force_singleton_trailing_comma {
+		parts.push(doc_text(","));
+	}
 	if should_break {
 		let indent_size = configuration::values["tab_width"];
 		return doc_concat_list(
@@ -2618,15 +2621,15 @@ fn doc_bracket_list(node, open_bracket, close_bracket, k_open, k_close) {
 }
 
 fn doc_array_expression(node) {
-	doc_bracket_list(node, "[", "]", kinds::lbracket, kinds::rbracket)
+	doc_bracket_list(node, "[", "]", kinds::lbracket, kinds::rbracket, false)
 }
 
 fn doc_tuple_expression(node) {
-	doc_bracket_list(node, "(", ")", kinds::lparen, kinds::rparen)
+	doc_bracket_list(node, "(", ")", kinds::lparen, kinds::rparen, true)
 }
 
 fn doc_tuple_pattern(node) {
-	doc_bracket_list(node, "(", ")", kinds::lparen, kinds::rparen)
+	doc_bracket_list(node, "(", ")", kinds::lparen, kinds::rparen, true)
 }
 
 fn doc_type_cast_expression(node) {
