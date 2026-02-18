@@ -472,6 +472,30 @@ fn stmt_tail_kind(stmt) {
 	let n = stmt;
 	while n != () {
 		let k = n.kind_id();
+		if k == kinds::ExprBinary {
+			let kids = n.children();
+			if kids != () {
+				let i = kids.len() - 1;
+				while i >= 0 {
+					let c = kids[i];
+					if c != () {
+						let ck = c.kind_id();
+						if ck != kinds::binop {
+							let unwrapped = unwrap_expr(c);
+							if unwrapped != () {
+								return unwrapped.kind_id();
+							}
+							return ck;
+						}
+					}
+					if i == 0 {
+						break;
+					}
+					i -= 1;
+				}
+			}
+			return k;
+		}
 		if k == kinds::ExprDeclareVar {
 			let kids = n.children();
 			let tail = ();
