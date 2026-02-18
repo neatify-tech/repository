@@ -2762,7 +2762,7 @@ let queries = [
 let root_doc = walk(
 	"typescript",
 	queries,
-	|node, _children| {
+	|node| {
 		build_doc(node)
 	}
 );

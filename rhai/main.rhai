@@ -2507,7 +2507,7 @@ let queries = [
 let root_doc = walk(
 	"rhai",
 	queries,
-	|node, children| {
+	|node| {
 		build_doc(node)
 	}
 );

@@ -4292,7 +4292,7 @@ let root_doc = walk(
 	"rust",
 	kinds::list,
 	// queries,
-	|node, _children| {
+	|node| {
 		build_doc(node)
 	}
 );

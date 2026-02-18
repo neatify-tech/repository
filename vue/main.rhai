@@ -564,7 +564,7 @@ let queries = [
 let root_doc = walk(
 	"vue",
 	queries,
-	|node, children| {
+	|node| {
 		build_doc(node)
 	}
 );

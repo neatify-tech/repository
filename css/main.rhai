@@ -570,7 +570,7 @@ let queries = [
 let root_doc = walk(
 	"css",
 	queries,
-	|node, children| {
+	|node| {
 		build_doc(node)
 	}
 );

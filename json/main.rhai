@@ -209,7 +209,7 @@ let queries = [
 let root_doc = walk(
 	"json",
 	queries,
-	|node, children| {
+	|node| {
 		build_doc(node)
 	}
 );

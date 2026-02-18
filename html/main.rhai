@@ -545,7 +545,7 @@ let queries = [
 let root_doc = walk(
 	"html",
 	queries,
-	|node, children| {
+	|node| {
 		build_doc(node)
 	},
 	#{ rewrite: true }

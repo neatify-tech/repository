@@ -208,7 +208,7 @@ let queries = [
 let root_doc = walk(
 	"markdown",
 	queries,
-	|node, children| {
+	|node| {
 		build_doc(node)
 	}
 );
