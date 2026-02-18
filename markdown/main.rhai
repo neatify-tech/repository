@@ -13,13 +13,13 @@ fn doc_concat_list(docs) {
 	doc_concat(docs)
 }
 
-fn doc_block_children(children) {
+fn doc_block_children(node) {
 	let parts = [];
 	let prev_kind = -1;
 	let i = 0;
-	while i < children.len {
-		let kind_id = children.kind(i);
-		let d = doc_for_child(children, i);
+	while i < node.len {
+		let kind_id = node.kind(i);
+		let d = doc_for_child(node, i);
 		if d != () {
 			if parts.len() > 0 {
 				let sep = 2;
@@ -43,10 +43,10 @@ fn doc_block_children(children) {
 	doc_concat_list(parts)
 }
 
-fn doc_for_child(children, idx) {
-	let d = children.doc(idx);
+fn doc_for_child(node, idx) {
+	let d = node.doc(idx);
 	if d == () {
-		let r = children.range(idx);
+		let r = node.range(idx);
 		return doc_range(start(r), end(r));
 	}
 	d
@@ -87,24 +87,24 @@ fn trim_trailing_newlines(text) {
 	out
 }
 
-fn doc_fenced_code_block(node, children) {
+fn doc_fenced_code_block(node) {
 	let k_info = kinds::info_string;
 	let k_lang = kinds::language;
 	let k_content = kinds::code_fence_content;
 	let info = "";
 	let content_range = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_info || k == k_lang {
-			let r = children.range(i);
+			let r = node.range(i);
 			let raw = slice(r).trim();
 			if raw != "" {
 				info = raw;
 			}
 		}
 		else if k == k_content {
-			content_range = children.range(i);
+			content_range = node.range(i);
 		}
 		i += 1;
 	}
@@ -159,17 +159,17 @@ fn doc_fenced_code_block(node, children) {
 	])
 }
 
-fn build_doc(node, children) {
+fn build_doc(node) {
 	let k = node.kind_id();
 	if k == kinds::document {
-		let doc = doc_block_children(children);
+		let doc = doc_block_children(node);
 		if doc != () {
 			return doc;
 		}
 		return doc_text("");
 	}
 	if k == kinds::section {
-		let doc = doc_block_children(children);
+		let doc = doc_block_children(node);
 		if doc != () {
 			return doc;
 		}
@@ -182,7 +182,7 @@ fn build_doc(node, children) {
 		return doc_text(normalized);
 	}
 	if k == kinds::fenced_code_block {
-		return doc_fenced_code_block(node, children);
+		return doc_fenced_code_block(node);
 	}
 	if k == kinds::paragraph || k == kinds::atx_heading || k == kinds::setext_heading || k == kinds::list || k == kinds::list_item || k == kinds::link_reference_definition || k == kinds::thematic_break {
 		let r = byte_range(node);
@@ -209,7 +209,7 @@ let root_doc = walk(
 	"markdown",
 	queries,
 	|node, children| {
-		build_doc(node, children)
+		build_doc(node)
 	}
 );
 let width = configuration::values["max_width"];

@@ -13,10 +13,10 @@ fn doc_concat_list(docs) {
 	doc_concat(docs)
 }
 
-fn doc_for_child(children, idx) {
-	let d = children.doc(idx);
+fn doc_for_child(node, idx) {
+	let d = node.doc(idx);
 	if d == () {
-		let r = children.range(idx);
+		let r = node.range(idx);
 		return doc_range(start(r), end(r));
 	}
 	d
@@ -268,13 +268,13 @@ fn doc_selectors(node) {
 	])
 }
 
-fn doc_declaration(node, children) {
+fn doc_declaration(node) {
 	let prop_id = kinds::property_name;
 	let prop_range = ();
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == prop_id {
-			prop_range = children.range(i);
+	while i < node.len {
+		if node.kind(i) == prop_id {
+			prop_range = node.range(i);
 			break;
 		}
 		i += 1;
@@ -302,7 +302,7 @@ fn doc_declaration(node, children) {
 	])
 }
 
-fn doc_block(node, children) {
+fn doc_block(node) {
 	let items = [];
 	let allowed = [
 		kinds::declaration,
@@ -318,8 +318,8 @@ fn doc_block(node, children) {
 		kinds::postcss_statement
 	];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		let j = 0;
 		let allowed_item = false;
 		while j < allowed.len() {
@@ -330,7 +330,7 @@ fn doc_block(node, children) {
 			j += 1;
 		}
 		if allowed_item {
-			items.push(doc_for_child(children, i));
+			items.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -355,12 +355,12 @@ fn doc_block(node, children) {
 	])
 }
 
-fn doc_keyframe_block(node, children) {
+fn doc_keyframe_block(node) {
 	let block_id = kinds::block;
 	let block_idx = -1;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == block_id {
+	while i < node.len {
+		if node.kind(i) == block_id {
 			block_idx = i;
 			break;
 		}
@@ -370,20 +370,20 @@ fn doc_keyframe_block(node, children) {
 		let r = byte_range(node);
 		return doc_range(start(r), end(r));
 	}
-	let block_range = children.range(block_idx);
+	let block_range = node.range(block_idx);
 	let header_range = range(start(byte_range(node)), start(block_range));
 	let header = trim(slice(header_range));
-	let block_doc = doc_for_child(children, block_idx);
+	let block_doc = doc_for_child(node, block_idx);
 	doc_concat_list([doc_text(header), doc_text(" "), block_doc])
 }
 
-fn doc_keyframe_block_list(node, children) {
+fn doc_keyframe_block_list(node) {
 	let items = [];
 	let keyframe_id = kinds::keyframe_block;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == keyframe_id {
-			items.push(doc_for_child(children, i));
+	while i < node.len {
+		if node.kind(i) == keyframe_id {
+			items.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -408,11 +408,11 @@ fn doc_keyframe_block_list(node, children) {
 	])
 }
 
-fn doc_at_rule(node, children, block_kind_id) {
+fn doc_at_rule(node, block_kind_id) {
 	let block_idx = -1;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == block_kind_id {
+	while i < node.len {
+		if node.kind(i) == block_kind_id {
 			block_idx = i;
 			break;
 		}
@@ -426,26 +426,26 @@ fn doc_at_rule(node, children, block_kind_id) {
 		}
 		return doc_text(normalized + ";");
 	}
-	let block_range = children.range(block_idx);
+	let block_range = node.range(block_idx);
 	let header_range = range(start(byte_range(node)), start(block_range));
 	let header = normalize_css_text(trim(slice(header_range)), true, true, true);
-	let block_doc = doc_for_child(children, block_idx);
+	let block_doc = doc_for_child(node, block_idx);
 	doc_concat_list([doc_text(header), doc_text(" "), block_doc])
 }
 
-fn doc_rule_set(node, children) {
+fn doc_rule_set(node) {
 	let selector_id = kinds::selectors;
 	let block_id = kinds::block;
 	let selectors_doc = ();
 	let block_doc = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == selector_id {
-			selectors_doc = doc_for_child(children, i);
+			selectors_doc = doc_for_child(node, i);
 		}
 		else if k == block_id {
-			block_doc = doc_for_child(children, i);
+			block_doc = doc_for_child(node, i);
 		}
 		i += 1;
 	}
@@ -456,7 +456,7 @@ fn doc_rule_set(node, children) {
 	doc_concat_list([selectors_doc, doc_text(" "), block_doc])
 }
 
-fn doc_stylesheet(children) {
+fn doc_stylesheet(node) {
 	let items = [];
 	let allowed = [
 		kinds::rule_set,
@@ -472,8 +472,8 @@ fn doc_stylesheet(children) {
 		kinds::declaration
 	];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		let j = 0;
 		let allowed_item = false;
 		while j < allowed.len() {
@@ -484,7 +484,7 @@ fn doc_stylesheet(children) {
 			j += 1;
 		}
 		if allowed_item {
-			items.push(doc_for_child(children, i));
+			items.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -504,46 +504,46 @@ fn doc_stylesheet(children) {
 	doc_concat_list(joined)
 }
 
-fn build_doc(node, children) {
+fn build_doc(node) {
 	let k = node.kind_id();
 	if k == kinds::stylesheet {
-		return doc_stylesheet(children);
+		return doc_stylesheet(node);
 	}
 	if k == kinds::selectors {
 		return doc_selectors(node);
 	}
 	if k == kinds::declaration {
-		return doc_declaration(node, children);
+		return doc_declaration(node);
 	}
 	if k == kinds::block {
-		return doc_block(node, children);
+		return doc_block(node);
 	}
 	if k == kinds::keyframe_block_list {
-		return doc_keyframe_block_list(node, children);
+		return doc_keyframe_block_list(node);
 	}
 	if k == kinds::keyframe_block {
-		return doc_keyframe_block(node, children);
+		return doc_keyframe_block(node);
 	}
 	if k == kinds::rule_set {
-		return doc_rule_set(node, children);
+		return doc_rule_set(node);
 	}
 	if k == kinds::media_statement {
-		return doc_at_rule(node, children, kinds::block);
+		return doc_at_rule(node, kinds::block);
 	}
 	if k == kinds::supports_statement {
-		return doc_at_rule(node, children, kinds::block);
+		return doc_at_rule(node, kinds::block);
 	}
 	if k == kinds::scope_statement {
-		return doc_at_rule(node, children, kinds::block);
+		return doc_at_rule(node, kinds::block);
 	}
 	if k == kinds::keyframes_statement {
-		return doc_at_rule(node, children, kinds::keyframe_block_list);
+		return doc_at_rule(node, kinds::keyframe_block_list);
 	}
 	if k == kinds::at_rule {
-		return doc_at_rule(node, children, kinds::block);
+		return doc_at_rule(node, kinds::block);
 	}
 	if k == kinds::import_statement || k == kinds::charset_statement || k == kinds::namespace_statement || k == kinds::postcss_statement {
-		return doc_at_rule(node, children, -1);
+		return doc_at_rule(node, -1);
 	}
 	let r = byte_range(node);
 	doc_range(start(r), end(r))
@@ -571,7 +571,7 @@ let root_doc = walk(
 	"css",
 	queries,
 	|node, children| {
-		build_doc(node, children)
+		build_doc(node)
 	}
 );
 let width = configuration::values["max_width"];

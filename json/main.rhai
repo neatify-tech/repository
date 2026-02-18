@@ -13,10 +13,10 @@ fn doc_concat_list(docs) {
 	doc_concat(docs)
 }
 
-fn doc_for_child(children, idx) {
-	let d = children.doc(idx);
+fn doc_for_child(node, idx) {
+	let d = node.doc(idx);
 	if d == () {
-		let r = children.range(idx);
+		let r = node.range(idx);
 		return doc_range(start(r), end(r));
 	}
 	d
@@ -50,13 +50,13 @@ fn is_value_kind(kind_id) {
 	false
 }
 
-fn doc_value(node, children) {
+fn doc_value(node) {
 	let k = node.kind_id();
 	if k == kinds::object {
-		return doc_object(children);
+		return doc_object(node);
 	}
 	if k == kinds::array {
-		return doc_array(children);
+		return doc_array(node);
 	}
 	if k == kinds::string || k == kinds::number || k == kinds::lit_true || k == kinds::lit_false || k == kinds::lit_null {
 		let r = byte_range(node);
@@ -64,8 +64,8 @@ fn doc_value(node, children) {
 	}
 	if k == kinds::value {
 		let i = 0;
-		while i < children.len {
-			let d = doc_for_child(children, i);
+		while i < node.len {
+			let d = doc_for_child(node, i);
 			if d != () {
 				return d;
 			}
@@ -76,18 +76,18 @@ fn doc_value(node, children) {
 	doc_range(start(r), end(r))
 }
 
-fn doc_pair(children) {
+fn doc_pair(node) {
 	let k_string = kinds::string;
 	let key_doc = ();
 	let value_doc = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_string && key_doc == () {
-			key_doc = doc_for_child(children, i);
+			key_doc = doc_for_child(node, i);
 		}
 		else if value_doc == () && is_value_kind(k) {
-			value_doc = doc_for_child(children, i);
+			value_doc = doc_for_child(node, i);
 		}
 		i += 1;
 	}
@@ -97,12 +97,12 @@ fn doc_pair(children) {
 	doc_concat_list([key_doc, doc_text(": "), value_doc])
 }
 
-fn doc_object(children) {
+fn doc_object(node) {
 	let items = [];
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == kinds::pair {
-			items.push(doc_for_child(children, i));
+	while i < node.len {
+		if node.kind(i) == kinds::pair {
+			items.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -133,13 +133,13 @@ fn doc_object(children) {
 	])
 }
 
-fn doc_array(children) {
+fn doc_array(node) {
 	let items = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if is_value_kind(k) {
-			items.push(doc_for_child(children, i));
+			items.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -170,12 +170,12 @@ fn doc_array(children) {
 	])
 }
 
-fn build_doc(node, children) {
+fn build_doc(node) {
 	let k = node.kind_id();
 	if k == kinds::document {
 		let i = 0;
-		while i < children.len {
-			let d = doc_for_child(children, i);
+		while i < node.len {
+			let d = doc_for_child(node, i);
 			if d != () {
 				return d;
 			}
@@ -184,16 +184,16 @@ fn build_doc(node, children) {
 		return doc_text("");
 	}
 	if k == kinds::object {
-		return doc_object(children);
+		return doc_object(node);
 	}
 	if k == kinds::array {
-		return doc_array(children);
+		return doc_array(node);
 	}
 	if k == kinds::pair {
-		return doc_pair(children);
+		return doc_pair(node);
 	}
 	if k == kinds::value {
-		return doc_value(node, children);
+		return doc_value(node);
 	}
 	let r = byte_range(node);
 	doc_range(start(r), end(r))
@@ -210,7 +210,7 @@ let root_doc = walk(
 	"json",
 	queries,
 	|node, children| {
-		build_doc(node, children)
+		build_doc(node)
 	}
 );
 let width = configuration::values["max_width"];

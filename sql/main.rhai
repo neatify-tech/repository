@@ -32,10 +32,10 @@ fn doc_text_lines(text) {
 	doc_concat_list(parts)
 }
 
-fn doc_for_child(children, idx) {
-	let d = children.doc(idx);
+fn doc_for_child(node, idx) {
+	let d = node.doc(idx);
 	if d == () {
-		let r = children.range(idx);
+		let r = node.range(idx);
 		return doc_range(start(r), end(r));
 	}
 	d
@@ -205,22 +205,22 @@ fn doc_identifier(node) {
 	doc_range(start(r), end(r))
 }
 
-fn doc_binary_expression(node, children) {
+fn doc_binary_expression(node) {
 	let left = ();
 	let right = ();
 	let op = "";
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if left == () {
-			left = doc_for_child(children, i);
+			left = doc_for_child(node, i);
 		}
 		else if k == kinds::eq || k == kinds::gte || k == kinds::gt || k == kinds::lt || k == kinds::lte || k == kinds::neq || k == kinds::not_eq || k == kinds::binary_operator {
-			let r = children.range(i);
+			let r = node.range(i);
 			op = slice(r).trim();
 		}
 		else if right == () {
-			right = doc_for_child(children, i);
+			right = doc_for_child(node, i);
 		}
 		i += 1;
 	}
@@ -234,21 +234,21 @@ fn doc_binary_expression(node, children) {
 	doc_concat_list([left, doc_text(" "), doc_text(op), doc_text(" "), right])
 }
 
-fn doc_in_expression(node, children) {
+fn doc_in_expression(node) {
 	let left = ();
 	let tuple = ();
 	let subquery = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if left == () {
-			left = doc_for_child(children, i);
+			left = doc_for_child(node, i);
 		}
 		else if k == kinds::tuple {
-			tuple = doc_for_child(children, i);
+			tuple = doc_for_child(node, i);
 		}
 		else if k == kinds::select_statement || k == kinds::select_subexpression {
-			subquery = doc_for_child(children, i);
+			subquery = doc_for_child(node, i);
 		}
 		i += 1;
 	}
@@ -273,13 +273,13 @@ fn doc_in_expression(node, children) {
 	doc_concat_list([left, doc_text(" in "), tuple])
 }
 
-fn doc_tuple(node, children) {
+fn doc_tuple(node) {
 	let items = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::string || k == kinds::number || k == kinds::identifier || k == kinds::dotted_name || k == kinds::argument_reference || k == kinds::named_parameter || k == kinds::literal_parameter || k == kinds::positional_parameter || k == kinds::select_statement {
-			items.push(doc_for_child(children, i));
+			items.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -310,14 +310,14 @@ fn doc_tuple(node, children) {
 	])
 }
 
-fn doc_is_expression(node, children) {
+fn doc_is_expression(node) {
 	let left = ();
 	let has_not = false;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if left == () {
-			left = doc_for_child(children, i);
+			left = doc_for_child(node, i);
 		}
 		else if k == kinds::NOT {
 			has_not = true;
@@ -337,18 +337,18 @@ fn doc_is_expression(node, children) {
 	doc_concat_list([left, doc_text(tail)])
 }
 
-fn doc_boolean_expression(node, children) {
+fn doc_boolean_expression(node) {
 	let parts = [];
 	let ops = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::AND || k == kinds::OR {
-			let r = children.range(i);
+			let r = node.range(i);
 			ops.push(lower(slice(r).trim()));
 		}
 		else {
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -380,7 +380,7 @@ fn doc_boolean_expression(node, children) {
 	doc_concat_list([head, doc_indent(indent_size, doc_concat_list([doc_hardline(), doc_concat_list(tail)]))])
 }
 
-fn doc_select_clause_body(node, children) {
+fn doc_select_clause_body(node) {
 	let items = [];
 	let item_start = -1;
 	let item_end = -1;
@@ -389,21 +389,21 @@ fn doc_select_clause_body(node, children) {
 	let case_ranges = [];
 	let select_ranges = [];
 	let i = 0;
-	while i < children.len {
-		let r = children.range(i);
-		if children.kind(i) == kinds::conditional_expression && case_idx < 0 {
+	while i < node.len {
+		let r = node.range(i);
+		if node.kind(i) == kinds::conditional_expression && case_idx < 0 {
 			case_idx = i;
 		}
-		if children.kind(i) == kinds::conditional_expression {
+		if node.kind(i) == kinds::conditional_expression {
 			case_ranges.push([start(r), end(r), i]);
 		}
-		if children.kind(i) == kinds::select_subexpression {
+		if node.kind(i) == kinds::select_subexpression {
 			select_ranges.push([start(r), end(r), i]);
 		}
 		if item_start < 0 {
 			item_start = start(r);
 		}
-		if children.kind(i) == kinds::comma {
+		if node.kind(i) == kinds::comma {
 			saw_comma = true;
 			let item_range = range(item_start, start(r));
 			let doc = ();
@@ -413,7 +413,7 @@ fn doc_select_clause_body(node, children) {
 				let s_start = entry[0];
 				let s_end = entry[1];
 				if s_start >= item_start && s_end <= start(r) {
-					let select_doc = doc_for_child(children, entry[2]);
+					let select_doc = doc_for_child(node, entry[2]);
 					let tail = slice(range(s_end, start(r))).trim();
 					if tail != "" {
 						doc = doc_concat_list([select_doc, doc_text(" " + normalize_ops(tail))]);
@@ -432,7 +432,7 @@ fn doc_select_clause_body(node, children) {
 					let c_start = entry[0];
 					let c_end = entry[1];
 					if c_start >= item_start && c_end <= start(r) {
-						let case_doc = doc_for_child(children, entry[2]);
+					let case_doc = doc_for_child(node, entry[2]);
 						let tail = slice(range(c_end, start(r))).trim();
 						if tail != "" {
 							doc = doc_concat_list([case_doc, doc_text(" " + tail)]);
@@ -470,7 +470,7 @@ fn doc_select_clause_body(node, children) {
 			let s_start = entry[0];
 			let s_end = entry[1];
 			if s_start >= item_start && s_end <= item_end {
-				let select_doc = doc_for_child(children, entry[2]);
+				let select_doc = doc_for_child(node, entry[2]);
 				let tail = slice(range(s_end, item_end)).trim();
 				if tail != "" {
 					doc = doc_concat_list([select_doc, doc_text(" " + normalize_ops(tail))]);
@@ -489,7 +489,7 @@ fn doc_select_clause_body(node, children) {
 				let c_start = entry[0];
 				let c_end = entry[1];
 				if c_start >= item_start && c_end <= item_end {
-					let case_doc = doc_for_child(children, entry[2]);
+					let case_doc = doc_for_child(node, entry[2]);
 					let tail = slice(range(c_end, item_end)).trim();
 					if tail != "" {
 						doc = doc_concat_list([case_doc, doc_text(" " + tail)]);
@@ -513,8 +513,8 @@ fn doc_select_clause_body(node, children) {
 		}
 	}
 	if !saw_comma && case_idx >= 0 {
-		let case_doc = doc_for_child(children, case_idx);
-		let case_range = children.range(case_idx);
+		let case_doc = doc_for_child(node, case_idx);
+		let case_range = node.range(case_idx);
 		let tail = slice(range(end(case_range), end(byte_range(node)))).trim();
 		if tail != "" {
 			return doc_concat_list([case_doc, doc_text(" " + tail)]);
@@ -549,12 +549,12 @@ fn doc_select_clause_body(node, children) {
 	doc_concat_list(parts)
 }
 
-fn doc_select_list(node, children) {
+fn doc_select_list(node) {
 	let body_doc = ();
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == kinds::select_clause_body {
-			body_doc = doc_for_child(children, i);
+	while i < node.len {
+		if node.kind(i) == kinds::select_clause_body {
+			body_doc = doc_for_child(node, i);
 			break;
 		}
 		i += 1;
@@ -563,8 +563,8 @@ fn doc_select_list(node, children) {
 		let items = [];
 		let current = [];
 		i = 0;
-		while i < children.len {
-			let k = children.kind(i);
+		while i < node.len {
+			let k = node.kind(i);
 			if k == kinds::SELECT {
 				i += 1;
 				continue;
@@ -574,7 +574,7 @@ fn doc_select_list(node, children) {
 				current = [];
 			}
 			else {
-				current.push(doc_for_child(children, i));
+				current.push(doc_for_child(node, i));
 			}
 			i += 1;
 		}
@@ -610,19 +610,19 @@ fn doc_select_list(node, children) {
 	])
 }
 
-fn doc_from_clause(node, children) {
+fn doc_from_clause(node) {
 	let k_join = kinds::join_clause;
 	let join_idx = -1;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == k_join {
+	while i < node.len {
+		if node.kind(i) == k_join {
 			join_idx = i;
 			break;
 		}
 		i += 1;
 	}
 	if join_idx >= 0 {
-		let join_doc = doc_for_child(children, join_idx);
+		let join_doc = doc_for_child(node, join_idx);
 		return doc_concat_list([doc_text("from "), join_doc]);
 	}
 	let r = byte_range(node);
@@ -631,21 +631,21 @@ fn doc_from_clause(node, children) {
 	doc_text("from " + tail)
 }
 
-fn doc_join_clause(node, children) {
+fn doc_join_clause(node) {
 	let left_parts = [];
 	let right_parts = [];
 	let join_type = "";
 	let on_doc = ();
 	let state = "left";
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::join_condition {
-			on_doc = doc_for_child(children, i);
+			on_doc = doc_for_child(node, i);
 			break;
 		}
 		if k == kinds::join_type {
-			let r = children.range(i);
+			let r = node.range(i);
 			join_type = lower(slice(r).trim());
 			state = "join";
 			i += 1;
@@ -656,7 +656,7 @@ fn doc_join_clause(node, children) {
 			i += 1;
 			continue;
 		}
-		let d = doc_for_child(children, i);
+		let d = doc_for_child(node, i);
 		if state == "left" {
 			if left_parts.len() > 0 {
 				left_parts.push(doc_text(" "));
@@ -687,13 +687,13 @@ fn doc_join_clause(node, children) {
 	doc_concat_list(parts)
 }
 
-fn doc_join_condition(node, children) {
+fn doc_join_condition(node) {
 	let expr_doc = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k != kinds::ON {
-			expr_doc = doc_for_child(children, i);
+			expr_doc = doc_for_child(node, i);
 		}
 		i += 1;
 	}
@@ -703,18 +703,18 @@ fn doc_join_condition(node, children) {
 	doc_concat_list([doc_text("on "), expr_doc])
 }
 
-fn doc_order_by_clause(children) {
+fn doc_order_by_clause(node) {
 	let k_order = kinds::order_expression;
 	let items = [];
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == k_order {
-			items.push(doc_for_child(children, i));
+	while i < node.len {
+		if node.kind(i) == k_order {
+			items.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
 	if items.len() == 0 {
-		let r = children.range(0);
+		let r = node.range(0);
 		return doc_range(start(r), end(r));
 	}
 	if items.len() == 1 {
@@ -742,18 +742,18 @@ fn doc_order_by_clause(children) {
 	])
 }
 
-fn doc_order_expression(node, children) {
+fn doc_order_expression(node) {
 	let expr_doc = ();
 	let direction = "";
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::ASC || k == kinds::DESC {
-			let r = children.range(i);
+			let r = node.range(i);
 			direction = lower(slice(r).trim());
 		}
 		else if expr_doc == () {
-			expr_doc = doc_for_child(children, i);
+			expr_doc = doc_for_child(node, i);
 		}
 		i += 1;
 	}
@@ -766,18 +766,18 @@ fn doc_order_expression(node, children) {
 	doc_concat_list([expr_doc, doc_text(" "), doc_text(direction)])
 }
 
-fn doc_group_by_clause(node, children) {
+fn doc_group_by_clause(node) {
 	let k_group = kinds::group_expression;
 	let items = [];
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == k_group {
-			items.push(doc_for_child(children, i));
+	while i < node.len {
+		if node.kind(i) == k_group {
+			items.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
 	if items.len() == 0 {
-		let r = children.range(0);
+		let r = node.range(0);
 		return doc_range(start(r), end(r));
 	}
 	if items.len() == 1 {
@@ -833,21 +833,21 @@ fn doc_group_by_clause(node, children) {
 	base
 }
 
-fn doc_having_clause(node, children) {
+fn doc_having_clause(node) {
 	let expr_doc = ();
 	let expr_start = -1;
 	let comment_doc = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::comment && comment_doc == () {
-			comment_doc = doc_for_child(children, i);
+			comment_doc = doc_for_child(node, i);
 		}
 		if k == kinds::boolean_expression || k == kinds::binary_expression || k == kinds::in_expression || k == kinds::is_expression || k == kinds::conditional_expression {
-			let r = children.range(i);
+			let r = node.range(i);
 			let s = start(r);
 			if expr_start < 0 || s < expr_start {
-				expr_doc = doc_for_child(children, i);
+				expr_doc = doc_for_child(node, i);
 				expr_start = s;
 			}
 		}
@@ -863,27 +863,27 @@ fn doc_having_clause(node, children) {
 	doc_concat_list([doc_text("having "), expr_doc])
 }
 
-fn doc_limit_clause(children) {
+fn doc_limit_clause(node) {
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::number {
-			let d = doc_for_child(children, i);
+			let d = doc_for_child(node, i);
 			return doc_concat_list([doc_text("limit "), d]);
 		}
 		i += 1;
 	}
-	let r = children.range(0);
+	let r = node.range(0);
 	doc_range(start(r), end(r))
 }
 
-fn doc_with_clause(children) {
+fn doc_with_clause(node) {
 	let k_cte = kinds::cte;
 	let ctes = [];
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == k_cte {
-			ctes.push(doc_for_child(children, i));
+	while i < node.len {
+		if node.kind(i) == k_cte {
+			ctes.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
@@ -903,22 +903,22 @@ fn doc_with_clause(children) {
 	doc_concat_list(parts)
 }
 
-fn doc_cte(node, children) {
+fn doc_cte(node) {
 	let name_doc = ();
 	let select_doc = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::identifier && name_doc == () {
-			name_doc = doc_for_child(children, i);
+			name_doc = doc_for_child(node, i);
 		}
 		else if k == kinds::select_statement {
-			select_doc = doc_for_child(children, i);
+			select_doc = doc_for_child(node, i);
 		}
 		i += 1;
 	}
 	if name_doc == () || select_doc == () {
-		let r = children.range(0);
+		let r = node.range(0);
 		return doc_range(start(r), end(r));
 	}
 	let indent_size = configuration::values["tab_width"];
@@ -931,8 +931,8 @@ fn doc_cte(node, children) {
 	])
 }
 
-fn doc_select_statement(node, children) {
-	let stmt_children = children;
+fn doc_select_statement(node) {
+	let stmt_children = node;
 	let select_doc = ();
 	let from_doc = ();
 	let where_doc = ();
@@ -1078,7 +1078,7 @@ fn doc_select_statement(node, children) {
 	doc_concat_list(parts)
 }
 
-fn doc_where_clause(node, children) {
+fn doc_where_clause(node) {
 	let r = byte_range(node);
 	let raw = slice(r);
 	let lower_raw = lower(raw);
@@ -1138,23 +1138,23 @@ fn doc_where_clause(node, children) {
 	let expr_start = -1;
 	let comment_doc = ();
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::comment && comment_doc == () {
-			comment_doc = doc_for_child(children, i);
+			comment_doc = doc_for_child(node, i);
 		}
 		if k == kinds::boolean_expression || k == kinds::binary_expression || k == kinds::in_expression || k == kinds::is_expression {
-			let r = children.range(i);
+			let r = node.range(i);
 			let s = start(r);
 			if expr_start < 0 || s < expr_start {
-				expr_doc = doc_for_child(children, i);
+				expr_doc = doc_for_child(node, i);
 				expr_start = s;
 			}
 		}
 		i += 1;
 	}
 	if expr_doc == () {
-		let r = children.range(0);
+		let r = node.range(0);
 		return doc_range(start(r), end(r));
 	}
 	if comment_doc != () {
@@ -1163,13 +1163,13 @@ fn doc_where_clause(node, children) {
 	doc_concat_list([doc_text("where "), expr_doc])
 }
 
-fn doc_case_expression(node, children) {
+fn doc_case_expression(node) {
 	let markers = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == kinds::WHEN || k == kinds::THEN || k == kinds::ELSE || k == kinds::END {
-			let r = children.range(i);
+			let r = node.range(i);
 			markers.push([k, start(r), end(r)]);
 		}
 		i += 1;
@@ -1254,71 +1254,71 @@ fn doc_case_expression(node, children) {
 	])
 }
 
-fn build_doc(node, children) {
+fn build_doc(node) {
 	let k = node.kind_id();
 	if k == kinds::source_file {
 		let i = 0;
 		let docs = [];
-		while i < children.len {
-			let child_kind = children.kind(i);
+		while i < node.len {
+			let child_kind = node.kind(i);
 			if child_kind == kinds::select_statement {
-				docs.push(doc_for_child(children, i));
+				docs.push(doc_for_child(node, i));
 			}
 			i += 1;
 		}
 		return doc_concat_list(docs);
 	}
 	if k == kinds::select_statement {
-		return doc_select_statement(node, children);
+		return doc_select_statement(node);
 	}
 	if k == kinds::from_clause {
-		return doc_from_clause(node, children);
+		return doc_from_clause(node);
 	}
 	if k == kinds::where_clause {
-		return doc_where_clause(node, children);
+		return doc_where_clause(node);
 	}
 	if k == kinds::having_clause {
-		return doc_having_clause(node, children);
+		return doc_having_clause(node);
 	}
 	if k == kinds::order_by_clause {
-		return doc_order_by_clause(children);
+		return doc_order_by_clause(node);
 	}
 	if k == kinds::limit_clause {
-		return doc_limit_clause(children);
+		return doc_limit_clause(node);
 	}
 	if k == kinds::with_clause {
-		return doc_with_clause(children);
+		return doc_with_clause(node);
 	}
 	if k == kinds::cte {
-		return doc_cte(node, children);
+		return doc_cte(node);
 	}
 	if k == kinds::group_by_clause {
-		return doc_group_by_clause(node, children);
+		return doc_group_by_clause(node);
 	}
 	if k == kinds::join_clause {
-		return doc_join_clause(node, children);
+		return doc_join_clause(node);
 	}
 	if k == kinds::join_condition {
-		return doc_join_condition(node, children);
+		return doc_join_condition(node);
 	}
 	if k == kinds::tuple {
-		return doc_tuple(node, children);
+		return doc_tuple(node);
 	}
 	if k == kinds::order_expression {
-		return doc_order_expression(node, children);
+		return doc_order_expression(node);
 	}
 	if k == kinds::select_clause {
-		return doc_select_list(node, children);
+		return doc_select_list(node);
 	}
 	if k == kinds::select_clause_body {
-		return doc_select_clause_body(node, children);
+		return doc_select_clause_body(node);
 	}
 	if k == kinds::select_subexpression {
 		let select_doc = ();
 		let i = 0;
-		while i < children.len {
-			if children.kind(i) == kinds::select_statement {
-				select_doc = doc_for_child(children, i);
+		while i < node.len {
+			if node.kind(i) == kinds::select_statement {
+				select_doc = doc_for_child(node, i);
 				break;
 			}
 			i += 1;
@@ -1338,19 +1338,19 @@ fn build_doc(node, children) {
 		);
 	}
 	if k == kinds::boolean_expression {
-		return doc_boolean_expression(node, children);
+		return doc_boolean_expression(node);
 	}
 	if k == kinds::binary_expression {
-		return doc_binary_expression(node, children);
+		return doc_binary_expression(node);
 	}
 	if k == kinds::in_expression {
-		return doc_in_expression(node, children);
+		return doc_in_expression(node);
 	}
 	if k == kinds::is_expression {
-		return doc_is_expression(node, children);
+		return doc_is_expression(node);
 	}
 	if k == kinds::conditional_expression {
-		return doc_case_expression(node, children);
+		return doc_case_expression(node);
 	}
 	let r = byte_range(node);
 	doc_range(start(r), end(r))
@@ -1384,7 +1384,7 @@ let root_doc = walk(
 	"sql",
 	queries,
 	|node, children| {
-		build_doc(node, children)
+		build_doc(node)
 	}
 );
 let width = configuration::values["max_width"];

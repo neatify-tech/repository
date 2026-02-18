@@ -13,10 +13,10 @@ fn doc_concat_list(docs) {
 	doc_concat(docs)
 }
 
-fn doc_for_child(children, idx) {
-	let d = children.doc(idx);
+fn doc_for_child(node, idx) {
+	let d = node.doc(idx);
 	if d == () {
-		let r = children.range(idx);
+		let r = node.range(idx);
 		return doc_range(start(r), end(r));
 	}
 	d
@@ -30,15 +30,15 @@ fn is_whitespace_range(range) {
 	trim_text_range(range) == ""
 }
 
-fn doc_attribute(children) {
+fn doc_attribute(node) {
 	let k_attr_name = kinds::attribute_name;
 	let k_attr_value = kinds::attribute_value;
 	let k_attr_qvalue = kinds::quoted_attribute_value;
 	let name_idx = -1;
 	let value_idx = -1;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_attr_name && name_idx < 0 {
 			name_idx = i;
 		}
@@ -50,11 +50,11 @@ fn doc_attribute(children) {
 	if name_idx < 0 {
 		return doc_text("");
 	}
-	let name_doc = doc_for_child(children, name_idx);
+	let name_doc = doc_for_child(node, name_idx);
 	if value_idx < 0 {
 		return name_doc;
 	}
-	let value_doc = doc_for_child(children, value_idx);
+	let value_doc = doc_for_child(node, value_idx);
 	doc_concat_list([name_doc, doc_text("="), value_doc])
 }
 
@@ -63,31 +63,31 @@ fn doc_directive_attribute(node) {
 	doc_range(start(r), end(r))
 }
 
-fn doc_tag_name(children) {
+fn doc_tag_name(node) {
 	let k_tag_name = kinds::tag_name;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == k_tag_name {
-			return doc_for_child(children, i);
+	while i < node.len {
+		if node.kind(i) == k_tag_name {
+			return doc_for_child(node, i);
 		}
 		i += 1;
 	}
 	doc_text("")
 }
 
-fn doc_start_or_self_tag(node, children, close_text) {
+fn doc_start_or_self_tag(node, close_text) {
 	let attrs = [];
 	let k_attr = kinds::attribute;
 	let k_directive = kinds::directive_attribute;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_attr || k == k_directive {
-			attrs.push(doc_for_child(children, i));
+			attrs.push(doc_for_child(node, i));
 		}
 		i += 1;
 	}
-	let name_doc = doc_tag_name(children);
+	let name_doc = doc_tag_name(node);
 	if attrs.len() == 0 {
 		return doc_concat_list([doc_text("<"), name_doc, doc_text(close_text)]);
 	}
@@ -150,12 +150,12 @@ fn tag_name_from_start_tag_text(text) {
 	text.sub_string(start, end - start)
 }
 
-fn element_tag_name(children) {
+fn element_tag_name(node) {
 	let k_start = kinds::start_tag;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == k_start {
-			let r = children.range(i);
+	while i < node.len {
+		if node.kind(i) == k_start {
+			let r = node.range(i);
 			return tag_name_from_start_tag_text(slice(r));
 		}
 		i += 1;
@@ -206,19 +206,19 @@ fn inline_container_tag(tag) {
 	false
 }
 
-fn inline_child_ok(children, idx) {
+fn inline_child_ok(node, idx) {
 	let k_text = kinds::text;
 	let k_raw = kinds::raw_text;
 	let k_entity = kinds::interpolation;
 	let k_element = kinds::element;
 	let k_component = kinds::component;
 	let k_template = kinds::template_element;
-	let k = children.kind(idx);
+	let k = node.kind(idx);
 	if k == k_text || k == k_raw || k == k_entity {
 		return true;
 	}
 	if k == k_element || k == k_component || k == k_template {
-		let tag = tag_name_from_start_tag_text(slice(children.range(idx)));
+		let tag = tag_name_from_start_tag_text(slice(node.range(idx)));
 		return inline_container_tag(tag);
 	}
 	false
@@ -232,7 +232,7 @@ fn doc_text_node(node) {
 	doc_text(trimmed)
 }
 
-fn doc_element(node, children) {
+fn doc_element(node) {
 	let k_start = kinds::start_tag;
 	let k_end = kinds::end_tag;
 	let k_self = kinds::self_closing_tag;
@@ -241,20 +241,20 @@ fn doc_element(node, children) {
 	let k_element = kinds::element;
 	let k_component = kinds::component;
 	let k_template = kinds::template_element;
-	let tag_name = element_tag_name(children);
+	let tag_name = element_tag_name(node);
 	if tag_name == "style" {
-		return doc_script_style(node, children, "css");
+		return doc_script_style(node, "css");
 	}
 	if tag_name == "script" {
-		return doc_script_style(node, children, "typescript");
+		return doc_script_style(node, "typescript");
 	}
 	let start_idx = -1;
 	let end_idx = -1;
 	let self_idx = -1;
 	let content = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_start {
 			start_idx = i;
 		}
@@ -265,7 +265,7 @@ fn doc_element(node, children) {
 			self_idx = i;
 		}
 		else if k == k_text || k == k_raw {
-			let r = children.range(i);
+			let r = node.range(i);
 			if !is_whitespace_range(r) {
 				content.push(i);
 			}
@@ -276,14 +276,14 @@ fn doc_element(node, children) {
 		i += 1;
 	}
 	if self_idx >= 0 && start_idx < 0 {
-		return doc_for_child(children, self_idx);
+		return doc_for_child(node, self_idx);
 	}
 	if start_idx < 0 {
 		return doc_range(start(byte_range(node)), end(byte_range(node)));
 	}
-	let start_doc = doc_for_child(children, start_idx);
+	let start_doc = doc_for_child(node, start_idx);
 	let end_doc = if end_idx >= 0 {
-		doc_for_child(children, end_idx)
+		doc_for_child(node, end_idx)
 	}
 	else {
 		doc_text("")
@@ -302,7 +302,7 @@ fn doc_element(node, children) {
 		let j = 0;
 		let all_inline = true;
 		while j < content.len() {
-			if !inline_child_ok(children, content[j]) {
+			if !inline_child_ok(node, content[j]) {
 				all_inline = false;
 				break;
 			}
@@ -312,7 +312,7 @@ fn doc_element(node, children) {
 	}
 	if !inline_ok {
 		let inline_kind = if content.len() == 1 {
-			children.kind(content[0])
+			node.kind(content[0])
 		}
 		else {
 			-1
@@ -326,12 +326,12 @@ fn doc_element(node, children) {
 		let j = 0;
 		while j < content.len() {
 			let idx = content[j];
-			let k = children.kind(idx);
+			let k = node.kind(idx);
 			if k != k_text && k != k_raw && k != kinds::interpolation {
 				all_simple = false;
 				break;
 			}
-			let r = children.range(idx);
+			let r = node.range(idx);
 			let raw = slice(r);
 			if raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0 {
 				all_simple = false;
@@ -343,9 +343,9 @@ fn doc_element(node, children) {
 	}
 	if content.len() == 1 {
 		let idx = content[0];
-		let k = children.kind(idx);
+		let k = node.kind(idx);
 		if k == k_text || k == k_raw || k == kinds::interpolation {
-			let r = children.range(idx);
+			let r = node.range(idx);
 			let raw = slice(r);
 			if raw.index_of("\n") < 0 && raw.index_of("\r") < 0 {
 				return doc_concat_list([start_doc, doc_range(start(r), end(r)), end_doc]);
@@ -358,7 +358,7 @@ fn doc_element(node, children) {
 		let prev_range = ();
 		while j < content.len() {
 			let idx = content[j];
-			let r = children.range(idx);
+			let r = node.range(idx);
 			if prev_range != () {
 				let gap = slice(range(end(prev_range), start(r)));
 				if gap.len() > 0 && trim(gap) == "" {
@@ -373,7 +373,7 @@ fn doc_element(node, children) {
 	}
 	if inline_ok {
 		if content.len() == 1 {
-			let inner_doc = doc_for_child(children, content[0]);
+			let inner_doc = doc_for_child(node, content[0]);
 			if inner_doc == () {
 				return doc_concat_list([start_doc, end_doc]);
 			}
@@ -385,15 +385,15 @@ fn doc_element(node, children) {
 		let prev_kind = -1;
 		while j < content.len() {
 			let idx = content[j];
-			let k = children.kind(idx);
-			let r = children.range(idx);
+			let k = node.kind(idx);
+			let r = node.range(idx);
 			let raw = slice(r);
 			if prev_kind == kinds::interpolation && (k == kinds::text || k == kinds::raw_text) {
 				if raw.starts_with(" ") || raw.starts_with("\t") {
 					inline_docs.push(doc_text(" "));
 				}
 			}
-			let d = doc_for_child(children, idx);
+			let d = doc_for_child(node, idx);
 			if prev_range != () {
 				let gap = slice(range(end(prev_range), start(r)));
 				if gap.len() > 0 && trim(gap) == "" {
@@ -405,7 +405,7 @@ fn doc_element(node, children) {
 			}
 			let next_idx = if j + 1 < content.len() { content[j + 1] } else { -1 };
 			if next_idx >= 0 {
-				let next_kind = children.kind(next_idx);
+				let next_kind = node.kind(next_idx);
 				if (k == kinds::text || k == kinds::raw_text) && next_kind == kinds::interpolation {
 					if raw.ends_with(" ") || raw.ends_with("\t") {
 						inline_docs.push(doc_text(" "));
@@ -421,7 +421,7 @@ fn doc_element(node, children) {
 	let inner_docs = [];
 	i = 0;
 	while i < content.len() {
-		inner_docs.push(doc_for_child(children, content[i]));
+		inner_docs.push(doc_for_child(node, content[i]));
 		if i < content.len() - 1 {
 			inner_docs.push(doc_hardline());
 		}
@@ -436,7 +436,7 @@ fn doc_element(node, children) {
 	])
 }
 
-fn doc_script_style(node, children, language) {
+fn doc_script_style(node, language) {
 	let k_start = kinds::start_tag;
 	let k_end = kinds::end_tag;
 	let k_raw = kinds::raw_text;
@@ -444,8 +444,8 @@ fn doc_script_style(node, children, language) {
 	let end_idx = -1;
 	let raw_idx = -1;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_start {
 			start_idx = i;
 		}
@@ -460,9 +460,9 @@ fn doc_script_style(node, children, language) {
 	if start_idx < 0 {
 		return doc_range(start(byte_range(node)), end(byte_range(node)));
 	}
-	let start_doc = doc_for_child(children, start_idx);
+	let start_doc = doc_for_child(node, start_idx);
 	let end_doc = if end_idx >= 0 {
-		doc_for_child(children, end_idx)
+		doc_for_child(node, end_idx)
 	}
 	else {
 		doc_text("")
@@ -470,7 +470,7 @@ fn doc_script_style(node, children, language) {
 	if raw_idx < 0 {
 		return doc_concat_list([start_doc, end_doc]);
 	}
-	let raw_range = children.range(raw_idx);
+	let raw_range = node.range(raw_idx);
 	if is_whitespace_range(raw_range) {
 		return doc_concat_list([start_doc, end_doc]);
 	}
@@ -487,13 +487,13 @@ fn doc_script_style(node, children, language) {
 	])
 }
 
-fn build_doc(node, children) {
+fn build_doc(node) {
 	let k = node.kind_id();
 	if k == kinds::component {
 		let parts = [];
 		let i = 0;
-		while i < children.len {
-			let d = doc_for_child(children, i);
+		while i < node.len {
+			let d = doc_for_child(node, i);
 			if d != () {
 				if parts.len() > 0 {
 					parts.push(doc_hardline());
@@ -505,16 +505,16 @@ fn build_doc(node, children) {
 		return doc_concat_list(parts);
 	}
 	if k == kinds::element || k == kinds::template_element {
-		return doc_element(node, children);
+		return doc_element(node);
 	}
 	if k == kinds::script_element {
-		return doc_script_style(node, children, "typescript");
+		return doc_script_style(node, "typescript");
 	}
 	if k == kinds::style_element {
-		return doc_script_style(node, children, "css");
+		return doc_script_style(node, "css");
 	}
 	if k == kinds::start_tag {
-		return doc_start_or_self_tag(node, children, ">");
+		return doc_start_or_self_tag(node, ">");
 	}
 	if k == kinds::self_closing_tag {
 		let raw = text(node).trim();
@@ -524,7 +524,7 @@ fn build_doc(node, children) {
 		else {
 			">"
 		};
-		return doc_start_or_self_tag(node, children, close_text);
+		return doc_start_or_self_tag(node, close_text);
 	}
 	if k == kinds::end_tag || k == kinds::comment || k == kinds::erroneous_end_tag || k == kinds::erroneous_end_tag_name || k == kinds::_implicit_end_tag {
 		let r = byte_range(node);
@@ -537,7 +537,7 @@ fn build_doc(node, children) {
 		if k == kinds::directive_attribute {
 			return doc_directive_attribute(node);
 		}
-		return doc_attribute(children);
+		return doc_attribute(node);
 	}
 	let r = byte_range(node);
 	doc_range(start(r), end(r))
@@ -565,7 +565,7 @@ let root_doc = walk(
 	"vue",
 	queries,
 	|node, children| {
-		build_doc(node, children)
+		build_doc(node)
 	}
 );
 let width = configuration::values["max_width"];
