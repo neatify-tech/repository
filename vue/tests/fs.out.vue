@@ -281,11 +281,13 @@
 		const mark = (node: TreeNode): boolean => {
 			let isVisibleNode = matches.has(node.path);
 			let childVisible = false;
-			node.children.forEach((child) => {
-				if (mark(child)) {
-					childVisible = true;
+			node.children.forEach(
+				(child) => {
+					if (mark(child)) {
+						childVisible = true;
+					}
 				}
-			});
+			);
 			if (childVisible) {
 				hasVisibleChild.add(node.path);
 			}
@@ -361,9 +363,12 @@
 				textarea.remove();
 			}
 			copyLabel.value = "Copied";
-			window.setTimeout(() => {
-				copyLabel.value = "Copy";
-			}, 1200);
+			window.setTimeout(
+				() => {
+					copyLabel.value = "Copy";
+				},
+				1200
+			);
 		}
 		catch (err) {
 			copyLabel.value = "Copy";
@@ -437,9 +442,12 @@
 		if (searchTimer) {
 			window.clearTimeout(searchTimer);
 		}
-		searchTimer = window.setTimeout(() => {
-			runSearch();
-		}, 250);
+		searchTimer = window.setTimeout(
+			() => {
+				runSearch();
+			},
+			250
+		);
 	}
 	function setSearchMode(mode: SearchMode) {
 		if (searchMode.value === mode) return;

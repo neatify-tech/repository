@@ -27,6 +27,7 @@ const KIND_PAIRS = [
 	["catch_clause", true],
 	["finally_clause", true],
 	["function_declaration", true],
+	["function_expression", true],
 	["arrow_function", true],
 	["call_expression", true],
 	["class_declaration", true],
@@ -187,6 +188,7 @@ export const try_statement = kind_id("typescript", "try_statement", true);
 export const catch_clause = kind_id("typescript", "catch_clause", true);
 export const finally_clause = kind_id("typescript", "finally_clause", true);
 export const function_declaration = kind_id("typescript", "function_declaration", true);
+export const function_expression = kind_id("typescript", "function_expression", true);
 export const arrow_function = kind_id("typescript", "arrow_function", true);
 export const call_expression = kind_id("typescript", "call_expression", true);
 export const class_declaration = kind_id("typescript", "class_declaration", true);

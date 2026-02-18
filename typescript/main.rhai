@@ -732,6 +732,80 @@ fn doc_function_declaration(node) {
 	doc_concat_list(parts)
 }
 
+fn doc_function_expression(node) {
+	let k_identifier = kinds::identifier;
+	let k_params = kinds::formal_parameters;
+	let k_block = kinds::statement_block;
+	let k_type_annotation = kinds::type_annotation;
+	let k_function = kinds::kw_function;
+	let k_async = kinds::kw_async;
+	let name_doc = ();
+	let params_doc = ();
+	let block_doc = ();
+	let return_doc = ();
+	let has_async = false;
+	let params_idx = -1;
+	let block_idx = -1;
+	let i = 0;
+	while i < node.len {
+		let k = node.kind(i);
+		let token_text = slice(node.range(i)).trim();
+		if k == k_async || token_text == "async" {
+			has_async = true;
+		}
+		if k == k_identifier && name_doc == () {
+			name_doc = doc_for_child(node, i);
+		}
+		else if k == k_params {
+			params_doc = doc_for_child_or_build(node, i);
+			params_idx = i;
+		}
+		else if k == k_block {
+			block_doc = doc_for_child_or_build(node, i);
+			block_idx = i;
+		}
+		i += 1;
+	}
+	if params_doc == () || block_doc == () {
+		return doc_text(text(node));
+	}
+	if params_idx >= 0 && block_idx >= 0 {
+		let params_range = node.range(params_idx);
+		let block_range = node.range(block_idx);
+		i = 0;
+		while i < node.len {
+			let k = node.kind(i);
+			if k == k_type_annotation {
+				let r = node.range(i);
+				if start(r) >= end(params_range) && start(r) < start(block_range) {
+					return_doc = doc_for_child(node, i);
+					break;
+				}
+			}
+			i += 1;
+		}
+	}
+	let prefix = if has_async {
+		"async "
+	}
+	else {
+		""
+	};
+	let parts = [];
+	parts.push(doc_text(prefix + "function"));
+	if name_doc != () {
+		parts.push(doc_text(" "));
+		parts.push(name_doc);
+	}
+	parts.push(params_doc);
+	if return_doc != () {
+		parts.push(return_doc);
+	}
+	parts.push(doc_text(" "));
+	parts.push(block_doc);
+	doc_concat_list(parts)
+}
+
 fn doc_method_definition(node) {
 	let k_params = kinds::formal_parameters;
 	let k_block = kinds::statement_block;
@@ -1537,19 +1611,62 @@ fn doc_arguments(node) {
 	let k_rparen = kinds::rparen;
 	let k_comma = kinds::comma;
 	let args = [];
+	let arg_nodes = [];
 	let i = 0;
 	while i < node.len {
 		let k = node.kind(i);
 		if k != k_lparen && k != k_rparen && k != k_comma {
 			args.push(doc_for_child_or_build(node, i));
+			arg_nodes.push(node.child(i));
 		}
 		i += 1;
 	}
 	if args.len() == 0 {
 		return doc_text("()");
 	}
+	let has_block_arg = {
+		let found = false;
+		let k_block = kinds::statement_block;
+		let k_switch = kinds::switch_body;
+		let j = 0;
+		while j < arg_nodes.len() {
+			let arg_node = arg_nodes[j];
+			if arg_node != () {
+				let stack = [arg_node];
+				while stack.len() > 0 {
+					let current = stack.pop();
+					if current != () {
+						let ck = current.kind_id();
+						if ck == k_block || ck == k_switch {
+							found = true;
+							break;
+						}
+						let kids = current.children();
+						if kids != () {
+							let i = 0;
+							while i < kids.len() {
+								let child = kids[i];
+								if child != () {
+									stack.push(child);
+								}
+								i += 1;
+							}
+						}
+					}
+					if found {
+						break;
+					}
+				}
+			}
+			if found {
+				break;
+			}
+			j += 1;
+		}
+		found
+	};
 	let max_width = configuration::values["max_width"];
-	let should_break = node.token_len() > max_width;
+	let should_break = node.token_len() > max_width || has_block_arg;
 	let parts = [];
 	let j = 0;
 	while j < args.len() {
@@ -2614,6 +2731,9 @@ fn build_doc(node) {
 	}
 	if k == kinds::function_declaration {
 		return doc_function_declaration(node);
+	}
+	if k == kinds::function_expression {
+		return doc_function_expression(node);
 	}
 	if k == kinds::method_definition {
 		return doc_method_definition(node);
