@@ -1521,6 +1521,13 @@ fn doc_binary_expression(node) {
 				has_logical = true;
 				break;
 			}
+			if k == kinds::binop {
+				let op_text = slice(node.range(j)).trim();
+				if op_text == "||" || op_text == "&&" || op_text == "&" || op_text == "|" || op_text == "^" {
+					has_logical = true;
+					break;
+				}
+			}
 			j += 1;
 		}
 		if has_logical {
