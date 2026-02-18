@@ -3,7 +3,7 @@ import "java/kinds.rhai" as kinds;
 import "java/comment_helpers.rhai" as comment_helpers;
 import "java/configuration.rhai" as configuration;
 
-fn doc_switch_statement(node, children) {
+fn doc_switch_statement(node) {
 	let k_switch_block = kinds::switch_block;
 	let k_paren_expr = kinds::parenthesized_expression;
 	let k_line_comment = kinds::line_comment;
@@ -11,8 +11,8 @@ fn doc_switch_statement(node, children) {
 	let body_idx = -1;
 	let paren_idx = -1;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_switch_block {
 			body_idx = i;
 			break;
@@ -25,12 +25,12 @@ fn doc_switch_statement(node, children) {
 	if body_idx < 0 {
 		return doc_text(text(node));
 	}
-	let body_doc = doc_for_child(children, body_idx);
+	let body_doc = doc_for_child(node, body_idx);
 	if paren_idx >= 0 {
 		return doc_concat_list(
 			[
 				doc_text("switch "),
-				doc_for_child(children, paren_idx),
+				doc_for_child(node, paren_idx),
 				doc_text(" "),
 				body_doc
 			]
@@ -39,10 +39,10 @@ fn doc_switch_statement(node, children) {
 	let header_parts = [doc_text("switch")];
 	let j = 0;
 	while j < body_idx {
-		let k = children.kind(j);
+		let k = node.kind(j);
 		if k == k_line_comment || k == k_block_comment {
 			header_parts.push(doc_text(" "));
-			header_parts.push(doc_for_child(children, j));
+			header_parts.push(doc_for_child(node, j));
 		}
 		j += 1;
 	}
@@ -53,7 +53,7 @@ fn doc_switch_statement(node, children) {
 	])
 }
 
-fn doc_switch_block(node, children) {
+fn doc_switch_block(node) {
 	let k_switch_group = kinds::switch_block_statement_group;
 	let k_switch_rule = kinds::switch_rule;
 	let k_lbrace = kinds::lbrace;
@@ -95,27 +95,27 @@ fn doc_switch_block(node, children) {
 	let parts = [];
 	let i = 0;
 	let first = true;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_switch_group {
 			if !first {
 				parts.push(doc_hardline());
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			first = false;
 		}
 		else if k == k_switch_rule {
 			if !first {
 				parts.push(doc_hardline());
 			}
-			parts.push(doc_switch_rule(node, children, i));
+			parts.push(doc_switch_rule(node, i));
 			first = false;
 		}
 		else if k != k_lbrace && k != k_rbrace {
 			if !first {
 				parts.push(doc_hardline());
 			}
-			parts.push(doc_for_child(children, i));
+			parts.push(doc_for_child(node, i));
 			first = false;
 		}
 		i += 1;
@@ -162,11 +162,11 @@ fn doc_switch_block(node, children) {
 	])
 }
 
-fn doc_switch_rule(node, children, idx) {
-	doc_text(slice(children.range(idx)).trim())
+fn doc_switch_rule(node, idx) {
+	doc_text(slice(node.range(idx)).trim())
 }
 
-fn doc_switch_group(node, children) {
+fn doc_switch_group(node) {
 	let k_switch_label = kinds::switch_label;
 	let k_colon = kinds::colon;
 	let k_lbrace = kinds::lbrace;
@@ -174,10 +174,10 @@ fn doc_switch_group(node, children) {
 	let labels = [];
 	let stmt_indices = [];
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_switch_label {
-			labels.push(children.range(i));
+			labels.push(node.range(i));
 		}
 		else if k != k_colon && k != k_lbrace && k != k_rbrace {
 			stmt_indices.push(i);
@@ -204,8 +204,8 @@ fn doc_switch_group(node, children) {
 	let j = 0;
 	while j < stmt_indices.len() {
 		let idx = stmt_indices[j];
-		let stmt_doc = children.doc(idx);
-		let stmt_text = slice(children.range(idx)).trim();
+		let stmt_doc = node.doc(idx);
+		let stmt_text = slice(node.range(idx)).trim();
 		if stmt_doc == () {
 			if !stmt_text.is_empty() {
 				if stmt_text == "break;" || stmt_text == "continue;" {

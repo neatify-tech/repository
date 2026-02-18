@@ -2,7 +2,7 @@
 import "java/kinds.rhai" as kinds;
 import "java/configuration.rhai" as configuration;
 
-fn doc_if_statement(node, children) {
+fn doc_if_statement(node) {
 	let k_paren_expr = kinds::parenthesized_expression;
 	let k_else = kinds::kw_else;
 	let k_if = kinds::kw_if;
@@ -53,15 +53,15 @@ fn doc_if_statement(node, children) {
 	let i = 0;
 	let after_cond = false;
 	let after_else = false;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_line_comment || k == k_block_comment {
 			i += 1;
 			continue;
 		}
 		if k == k_paren_expr && cond_doc == () {
 			cond_idx = i;
-			cond_doc = doc_for_child(children, i);
+			cond_doc = doc_for_child(node, i);
 			after_cond = true;
 		}
 		else if k == k_else {
@@ -82,12 +82,12 @@ fn doc_if_statement(node, children) {
 	let inline_comment_doc = ();
 	if cond_idx >= 0 {
 		let next_idx = cond_idx + 1;
-		if next_idx < children.len {
-			let nk = children.kind(next_idx);
+		if next_idx < node.len {
+			let nk = node.kind(next_idx);
 			if nk == k_line_comment {
-				let gap = slice(range(end(children.range(cond_idx)), start(children.range(next_idx))));
+				let gap = slice(range(end(node.range(cond_idx)), start(node.range(next_idx))));
 				if gap.index_of("\n") < 0 && gap.index_of("\r") < 0 {
-					inline_comment_doc = doc_for_child(children, next_idx);
+					inline_comment_doc = doc_for_child(node, next_idx);
 				}
 			}
 		}
@@ -95,11 +95,11 @@ fn doc_if_statement(node, children) {
 	let then_doc = if then_idx < 0 {
 		doc_text("")
 	}
-	else if children.kind(then_idx) == k_block {
-		doc_for_child(children, then_idx)
+	else if node.kind(then_idx) == k_block {
+		doc_for_child(node, then_idx)
 	}
 	else {
-		let body = slice(children.range(then_idx)).trim();
+		let body = slice(node.range(then_idx)).trim();
 		let indent_size = configuration::values["tab_width"];
 		doc_concat_list([
 			doc_text("{"),
@@ -121,7 +121,7 @@ fn doc_if_statement(node, children) {
 			then_doc
 		]
 	);
-	let base = if inline_comment_doc != () && then_idx >= 0 && children.kind(then_idx) != k_block {
+	let base = if inline_comment_doc != () && then_idx >= 0 && node.kind(then_idx) != k_block {
 		doc_concat_list(
 			[
 				doc_text("if "),
@@ -138,7 +138,7 @@ fn doc_if_statement(node, children) {
 			]
 		)
 	}
-	else if inline_comment_doc != () && then_idx >= 0 && children.kind(then_idx) != k_block {
+	else if inline_comment_doc != () && then_idx >= 0 && node.kind(then_idx) != k_block {
 		doc_concat_list(
 			[
 				inline_comment_doc,
@@ -153,14 +153,14 @@ fn doc_if_statement(node, children) {
 	if else_idx < 0 {
 		return base;
 	}
-	let else_doc = if children.kind(else_idx) == kinds::if_statement {
-		doc_for_child(children, else_idx)
+	let else_doc = if node.kind(else_idx) == kinds::if_statement {
+		doc_for_child(node, else_idx)
 	}
-	else if children.kind(else_idx) == k_block {
-		doc_for_child(children, else_idx)
+	else if node.kind(else_idx) == k_block {
+		doc_for_child(node, else_idx)
 	}
 	else {
-		let body = slice(children.range(else_idx)).trim();
+		let body = slice(node.range(else_idx)).trim();
 		let indent_size = configuration::values["tab_width"];
 		doc_concat_list([
 			doc_text("{"),

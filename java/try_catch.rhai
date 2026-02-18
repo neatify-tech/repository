@@ -43,7 +43,7 @@ fn normalize_resource_piece(text) {
 	out.trim()
 }
 
-fn doc_try_statement(node, children) {
+fn doc_try_statement(node) {
 	let k_block = kinds::block;
 	let k_catch_clause = kinds::catch_clause;
 	let k_finally_clause = kinds::finally_clause;
@@ -54,8 +54,8 @@ fn doc_try_statement(node, children) {
 	let catch_indices = [];
 	let finally_idx = -1;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_block && body_node == () {
 			body_node = 1;
 			body_idx = i;
@@ -74,29 +74,29 @@ fn doc_try_statement(node, children) {
 	let header_idx = -1;
 	let scan = 0;
 	while scan < body_idx {
-		let k = children.kind(scan);
+		let k = node.kind(scan);
 		if k != k_line_comment && k != k_block_comment {
 			header_idx = scan;
 		}
 		scan += 1;
 	}
-	let body_doc = doc_for_child(children, body_idx);
+	let body_doc = doc_for_child(node, body_idx);
 	let parts = [doc_concat_list([doc_text("try "), body_doc])];
 	let j = 0;
 	while j < catch_indices.len() {
 		let idx = catch_indices[j];
 		parts.push(doc_hardline());
-		parts.push(doc_for_child(children, idx));
+		parts.push(doc_for_child(node, idx));
 		j += 1;
 	}
 	if finally_idx >= 0 {
 		parts.push(doc_hardline());
-		parts.push(doc_for_child(children, finally_idx));
+		parts.push(doc_for_child(node, finally_idx));
 	}
 	doc_concat_list(parts)
 }
 
-fn doc_try_with_resources(node, children) {
+fn doc_try_with_resources(node) {
 	let k_resource = kinds::resource_specification;
 	let k_block = kinds::block;
 	let k_catch_clause = kinds::catch_clause;
@@ -107,8 +107,8 @@ fn doc_try_with_resources(node, children) {
 	let catch_indices = [];
 	let finally_idx = -1;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_resource && res_idx < 0 {
 			res_idx = i;
 		}
@@ -127,8 +127,8 @@ fn doc_try_with_resources(node, children) {
 	if res_idx < 0 || body_node == () {
 		return doc_text(text(node));
 	}
-	let res_text = slice(children.range(res_idx)).trim();
-	let body_doc = doc_for_child(children, body_idx);
+	let res_text = slice(node.range(res_idx)).trim();
+	let body_doc = doc_for_child(node, body_idx);
 	let inner = res_text.sub_string(1, res_text.len() - 2);
 	let parts = inner.split(";");
 	let items = [];
@@ -195,22 +195,22 @@ fn doc_try_with_resources(node, children) {
 	while j < catch_indices.len() {
 		let idx = catch_indices[j];
 		parts.push(doc_hardline());
-		parts.push(doc_for_child(children, idx));
+		parts.push(doc_for_child(node, idx));
 		j += 1;
 	}
 	if finally_idx >= 0 {
 		parts.push(doc_hardline());
-		parts.push(doc_for_child(children, finally_idx));
+		parts.push(doc_for_child(node, finally_idx));
 	}
 	doc_concat_list(parts)
 }
 
-fn doc_finally_clause(node, children) {
+fn doc_finally_clause(node) {
 	let k_block = kinds::block;
 	let body_idx = -1;
 	let i = 0;
-	while i < children.len {
-		if children.kind(i) == k_block {
+	while i < node.len {
+		if node.kind(i) == k_block {
 			body_idx = i;
 			break;
 		}
@@ -219,14 +219,14 @@ fn doc_finally_clause(node, children) {
 	if body_idx < 0 {
 		return doc_text(text(node));
 	}
-	let body_doc = doc_for_child(children, body_idx);
+	let body_doc = doc_for_child(node, body_idx);
 	doc_concat_list([
 		doc_text("finally "),
 		body_doc
 	])
 }
 
-fn doc_catch_clause(node, children) {
+fn doc_catch_clause(node) {
 	let k_param = kinds::catch_formal_parameter;
 	let k_block = kinds::block;
 	let k_line_comment = kinds::line_comment;
@@ -236,8 +236,8 @@ fn doc_catch_clause(node, children) {
 	let body_idx = -1;
 	let inline_comment_idx = -1;
 	let i = 0;
-	while i < children.len {
-		let k = children.kind(i);
+	while i < node.len {
+		let k = node.kind(i);
 		if k == k_param && param_idx < 0 {
 			param_idx = i;
 		}
@@ -255,8 +255,8 @@ fn doc_catch_clause(node, children) {
 	if param_idx < 0 || body_node == () {
 		return doc_text(text(node));
 	}
-	let param_text = slice(children.range(param_idx)).trim();
-	let body_doc = doc_for_child(children, body_idx);
+	let param_text = slice(node.range(param_idx)).trim();
+	let body_doc = doc_for_child(node, body_idx);
 	doc_concat_list([
 		doc_text("catch ("),
 		doc_text(param_text),
