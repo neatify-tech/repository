@@ -468,6 +468,90 @@ fn stmt_payload_kind(stmt) {
 	} - 1
 }
 
+fn stmt_tail_kind(stmt) {
+	let n = stmt;
+	while n != () {
+		let k = n.kind_id();
+		if k == kinds::ExprDeclareVar {
+			let kids = n.children();
+			let tail = ();
+			if kids != () {
+				let i = kids.len() - 1;
+				while i >= 0 {
+					let c = kids[i];
+					if c != () {
+						let ck = c.kind_id();
+						if ck != kinds::semi && ck != kinds::assign && ck != kinds::colon {
+							tail = c;
+							break;
+						}
+					}
+					if i == 0 {
+						break;
+					}
+					i -= 1;
+				}
+			}
+			if tail != () {
+				let unwrapped = unwrap_expr(tail);
+				if unwrapped != () {
+					return unwrapped.kind_id();
+				}
+				return tail.kind_id();
+			}
+			return k;
+		}
+		if k != kinds::Stmt && k != kinds::Item && k != kinds::Expr && k != kinds::ExprNoDecl {
+			return k;
+		}
+		let kids = children(n);
+		if kids == () || kids.len() == 0 {
+			return k;
+		}
+		let next = ();
+		let i = 0;
+		while i < kids.len() {
+			let c = kids[i];
+			if c != () {
+				let ck = c.kind_id();
+				if ck != kinds::semi && ck != kinds::lbrace && ck != kinds::rbrace && ck != kinds::lparen && ck != kinds::rparen && ck != kinds::comma {
+					next = c;
+					break;
+				}
+			}
+			i += 1;
+		}
+		if next == () {
+			return k;
+		}
+		n = next;
+	}
+	()
+}
+
+fn should_join_split_expr_stmt(current, next) {
+	if current == () || next == () {
+		return false;
+	}
+	let current_kind = stmt_tail_kind(current);
+	let next_kind = stmt_payload_kind(next);
+	if next_kind != kinds::ExprParen && next_kind != kinds::ExprArray {
+		return false;
+	}
+	let current_range = byte_range(current);
+	let next_range = byte_range(next);
+	if end(current_range) != start(next_range) {
+		return false;
+	}
+	current_kind == kinds::ExprChain
+		|| current_kind == kinds::ExprCall
+		|| current_kind == kinds::ExprDotAccess
+		|| current_kind == kinds::ExprIndex
+		|| current_kind == kinds::ExprPath
+		|| current_kind == kinds::ExprIdent
+		|| current_kind == kinds::ExprParen
+}
+
 fn is_import_kind(k) {
 	k == kinds::ExprImport
 }
@@ -502,11 +586,12 @@ fn doc_source_file(node) {
 				let current_kind = stmt_payload_kind(current);
 				let next_kind = stmt_payload_kind(next);
 				let needs_blank = (is_import_kind(current_kind) && !is_import_kind(next_kind)) || (is_block_kind(current_kind) && is_block_kind(next_kind));
+				let should_join = should_join_split_expr_stmt(current, next);
 				if needs_blank {
 					pieces.push(doc_hardline());
 					pieces.push(doc_hardline());
 				}
-				else {
+				else if !should_join {
 					pieces.push(doc_hardline());
 				}
 			}
@@ -519,6 +604,7 @@ fn doc_source_file(node) {
 fn doc_block(node) {
 	let k_lbrace = kinds::lbrace;
 	let k_rbrace = kinds::rbrace;
+	let kids = node.children();
 	let inner_idx = [];
 	let i = 0;
 	while i < node.len {
@@ -543,10 +629,9 @@ fn doc_block(node) {
 			let next_idx = inner_idx[j + 1];
 			let current_text = slice(node.range(idx)).trim();
 			let next_text = slice(node.range(next_idx)).trim();
-			if !(current_text.ends_with(";") || !next_text.starts_with("(")) {
-				// No separator: likely a split call like `foo` + `(bar)`
-			}
-			else {
+			let current = if kids.len() > idx { kids[idx] } else { () };
+			let next = if kids.len() > next_idx { kids[next_idx] } else { () };
+			if !should_join_split_expr_stmt(current, next) {
 				inner_doc.push(doc_hardline());
 			}
 		}
@@ -1846,6 +1931,18 @@ fn doc_expr_chain(node) {
 				}
 				merged = true;
 			}
+		}
+		else if k == kinds::ExprIndex {
+			if segments.len() == 0 {
+				let segment_doc = trace_call("doc_expr_chain::segment_doc", || doc_for_child(node, i));
+				base_doc = doc_concat_list([base_doc, segment_doc]);
+			}
+			else {
+				let prev = segments.pop();
+				let segment_doc = trace_call("doc_expr_chain::segment_doc", || doc_for_child(node, i));
+				segments.push(doc_concat_list([prev, segment_doc]));
+			}
+			merged = true;
 		}
 		if !merged {
 			segments.push(trace_call("doc_expr_chain::segment_doc", || doc_for_child(node, i)));
