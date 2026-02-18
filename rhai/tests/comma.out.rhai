@@ -3,6 +3,6 @@ let root_doc = walk(
 	kinds::list,
 	// queries,,,
 	|node, children| {
-		build_doc(node, children)
+		build_doc(node)
 	}
 );
