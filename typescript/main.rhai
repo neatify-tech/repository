@@ -2572,7 +2572,7 @@ fn doc_object_expression(node) {
 	let i = 0;
 	while i < node.len {
 		let k = node.kind(i);
-		if k == kinds::pair || k == kinds::shorthand_property_identifier || k == kinds::spread_element {
+		if k == kinds::pair || k == kinds::shorthand_property_identifier || k == kinds::spread_element || k == kinds::method_definition {
 			fields.push(doc_for_child(node, i));
 			field_texts.push(slice(node.range(i)).trim());
 		}
