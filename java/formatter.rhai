@@ -965,29 +965,63 @@ fn doc_string_literal(node) {
 		return doc_text(literal_text);
 	}
 	let indent_size = tab_width;
+	let parent_has_plus = false;
+	let parent_is_first_operand = false;
 	let p = node.parent();
 	if p != () && p.kind_id() == kinds::binary_expression {
-		let has_plus = false;
 		let i = 0;
 		while i < p.len {
 			if p.kind(i) == kinds::plus {
-				has_plus = true;
+				parent_has_plus = true;
 				break;
 			}
 			i += 1;
 		}
-		if has_plus {
-			indent_size = 0;
+		if parent_has_plus {
+			let kids = p.children();
+			if kids != () {
+				let j = 0;
+				while j < kids.len() {
+					let child = kids[j];
+					if child != () {
+						let ck = child.kind_id();
+						let is_comment = ck == kinds::line_comment || ck == kinds::block_comment;
+						if !is_comment && ck != kinds::plus {
+							let cr = byte_range(child);
+							let nr = byte_range(node);
+							if start(cr) == start(nr) && end(cr) == end(nr) {
+								parent_is_first_operand = true;
+							}
+							break;
+						}
+					}
+					j += 1;
+				}
+			}
 		}
 	}
 	let doc = doc_text("\"" + parts[0] + "\"");
 	let i = 1;
 	while i < parts.len() {
+		let cont_indent = if parent_has_plus {
+			if !parent_is_first_operand {
+				0
+			}
+			else if i > 1 {
+				0
+			}
+			else {
+				indent_size
+			}
+		}
+		else {
+			indent_size
+		};
 		doc = doc_concat_list(
 			[
 				doc,
 				doc_indent(
-					indent_size,
+					cont_indent,
 					doc_concat_list(
 						[
 							doc_hardline(),
