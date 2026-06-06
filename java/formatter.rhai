@@ -1504,6 +1504,10 @@ fn doc_method_invocation(node) {
 			};
 			let paren_too_long = paren_len != () && paren_len > max_width;
 			base_wrap = chain_len > max_width || ((chain_text.index_of("\n") >= 0 || chain_text.index_of("\r") >= 0) && chain_has_invocation) || (parent_len != () && parent_len > max_width) || args_too_long || binary_too_long || paren_too_long;
+			let in_args = has_ancestor_kind(node, kinds::argument_list) || has_ancestor_kind(node, kinds::annotation_argument_list);
+			if base_wrap && in_args && chain_norm_len <= max_width {
+				base_wrap = false;
+			}
 			if base_wrap && in_ternary && chain_norm_len <= max_width {
 				base_wrap = false;
 			}
@@ -2146,7 +2150,8 @@ fn doc_ternary_expression(node) {
 		}
 		levels
 	};
-	let prefix_cols = prefix_cols_raw + indent_levels * tab_width;
+	let base_cols = indent_levels * tab_width;
+	let prefix_cols = prefix_cols_raw + base_cols;
 	let node_children = node.children();
 	let cond_node = if cond_idx >= 0 && cond_idx < node_children.len() {
 		node_children[cond_idx]
@@ -2202,7 +2207,7 @@ fn doc_ternary_expression(node) {
 		count
 	};
 	let normalized = whitespace::normalize_inline_ws(raw);
-	let should_break = cond_raw.index_of("\n") >= 0 || prefix_cols + cond_raw.len() > max_width || logical_ops >= 3 || normalized.len() > max_width;
+	let should_break = cond_raw.index_of("\n") >= 0 || base_cols + cond_raw.len() > max_width || logical_ops >= 3 || normalized.len() > max_width;
 	let cond_doc = if cond_node != () && cond_node.kind_id() == kinds::binary_expression {
 		// TODO: may want to make this into a configuration parameter, the overall question is: do we want to force the boolean condition to wrap if the ternary is long?
 		// i think if the boolean condition is short but the ternary is long, the boolean can remain on one line
