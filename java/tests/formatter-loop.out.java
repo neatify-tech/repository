@@ -5,12 +5,14 @@ class FormatterLoop {
 			"path",
 			(read == null
 				? ""
-				: read + (ensureNewline != null
-						&& ensureNewline
-						&& !read.endsWith("\n")
-						&& !read.isEmpty()
-					? "\n"
-					: "")) + content
+				: read
+					+ (ensureNewline != null
+							&& ensureNewline
+							&& !read.endsWith("\n")
+							&& !read.isEmpty()
+						? "\n"
+						: ""))
+				+ content
 		);
 	}
 

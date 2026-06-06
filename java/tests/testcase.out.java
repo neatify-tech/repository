@@ -186,11 +186,13 @@ public class FileTool implements ContentJavaTool, RichJavaTool, InitializableToo
 			path,
 			(readResult.getContent() == null
 				? ""
-				: readResult.getContent() + (ensureNewline
-						&& !readResult.getContent().endsWith("\n")
-						&& !readResult.getContent().isEmpty()
-					? "\n"
-					: "")) + content
+				: readResult.getContent()
+					+ (ensureNewline
+							&& !readResult.getContent().endsWith("\n")
+							&& !readResult.getContent().isEmpty()
+						? "\n"
+						: ""))
+				+ content
 		);
 	}
 }

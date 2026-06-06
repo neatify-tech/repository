@@ -1,7 +1,7 @@
 private JsonNode loadReleasedDefinition(UUID workflowId) {
 	return entityManager.createQuery(
-			"select v.definitionJson from WorkflowDefinitionVersion v where v.workflowDefinition.id "
-				+ "= :workflowId "
+			"select v.definitionJson from WorkflowDefinitionVersion v where v.workflowDefinition.id = "
+				+ ":workflowId "
 				+ "and v.releasedAt is not null and v.deprecatedAt is null",
 			JsonNode.class
 		)

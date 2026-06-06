@@ -915,6 +915,41 @@ fn doc_string_literal(node) {
 		""
 	};
 	let prefix_cols_raw = whitespace::text_cols(prefix, tab_width);
+	let parent_has_plus = false;
+	let parent_is_first_operand = false;
+	let p = node.parent();
+	if p != () && p.kind_id() == kinds::binary_expression {
+		let i = 0;
+		while i < p.len {
+			if p.kind(i) == kinds::plus {
+				parent_has_plus = true;
+				break;
+			}
+			i += 1;
+		}
+		if parent_has_plus {
+			let kids = p.children();
+			if kids != () {
+				let j = 0;
+				while j < kids.len() {
+					let child = kids[j];
+					if child != () {
+						let ck = child.kind_id();
+						let is_comment = ck == kinds::line_comment || ck == kinds::block_comment;
+						if !is_comment && ck != kinds::plus {
+							let cr = byte_range(child);
+							let nr = byte_range(node);
+							if start(cr) == start(nr) && end(cr) == end(nr) {
+								parent_is_first_operand = true;
+							}
+							break;
+						}
+					}
+					j += 1;
+				}
+			}
+		}
+	}
 	let indent_levels = {
 		let levels = 0;
 		let p = node.parent();
@@ -928,7 +963,12 @@ fn doc_string_literal(node) {
 		levels
 	};
 	let base_cols = indent_levels * tab_width;
-	let prefix_cols = base_cols + prefix_cols_raw;
+	let prefix_cols = if parent_has_plus {
+		base_cols
+	}
+	else {
+		base_cols + prefix_cols_raw
+	};
 	let first_max = max_width - prefix_cols - 2;
 	if first_max < 1 {
 		return doc_text(literal_text);
@@ -965,41 +1005,6 @@ fn doc_string_literal(node) {
 		return doc_text(literal_text);
 	}
 	let indent_size = tab_width;
-	let parent_has_plus = false;
-	let parent_is_first_operand = false;
-	let p = node.parent();
-	if p != () && p.kind_id() == kinds::binary_expression {
-		let i = 0;
-		while i < p.len {
-			if p.kind(i) == kinds::plus {
-				parent_has_plus = true;
-				break;
-			}
-			i += 1;
-		}
-		if parent_has_plus {
-			let kids = p.children();
-			if kids != () {
-				let j = 0;
-				while j < kids.len() {
-					let child = kids[j];
-					if child != () {
-						let ck = child.kind_id();
-						let is_comment = ck == kinds::line_comment || ck == kinds::block_comment;
-						if !is_comment && ck != kinds::plus {
-							let cr = byte_range(child);
-							let nr = byte_range(node);
-							if start(cr) == start(nr) && end(cr) == end(nr) {
-								parent_is_first_operand = true;
-							}
-							break;
-						}
-					}
-					j += 1;
-				}
-			}
-		}
-	}
 	let doc = doc_text("\"" + parts[0] + "\"");
 	let i = 1;
 	while i < parts.len() {
@@ -1302,24 +1307,34 @@ fn doc_operator_expression_inner(node, allow_chain_split) {
 }
 
 fn is_string_concat_in_args(node) {
-	is_string_concat_tree(node)
-}
-
-fn is_string_concat_tree(node) {
-	let k = node.kind_id();
-	if k == kinds::string_literal {
-		return true;
-	}
-	if k != kinds::binary_expression {
+	if node.kind_id() != kinds::binary_expression {
 		return false;
 	}
+	let r = byte_range(node);
+	let matches = query("java", "(string_literal) @s", r);
+	if matches.len() == 0 {
+		return false;
+	}
+	concat_tree_all_plus(node)
+}
+
+fn concat_tree_all_plus(node) {
+	if node == () {
+		return true;
+	}
+	let k = node.kind_id();
+	if k != kinds::binary_expression {
+		return true;
+	}
 	let has_plus = false;
-	let saw_literal = false;
 	let i = 0;
 	while i < node.len {
-		if node.kind(i) == kinds::plus {
+		let op = node.kind(i);
+		if op == kinds::plus {
 			has_plus = true;
-			break;
+		}
+		else if op == kinds::minus || op == kinds::star || op == kinds::slash || op == kinds::percent || op == kinds::and_and || op == kinds::or_or || op == kinds::amp || op == kinds::pipe || op == kinds::caret || op == kinds::shl || op == kinds::shr || op == kinds::ushr || op == kinds::eq_eq || op == kinds::not_eq || op == kinds::lt || op == kinds::gt || op == kinds::lt_eq || op == kinds::gt_eq {
+			return false;
 		}
 		i += 1;
 	}
@@ -1328,33 +1343,19 @@ fn is_string_concat_tree(node) {
 	}
 	let kids = node.children();
 	if kids == () {
-		return false;
+		return true;
 	}
 	let j = 0;
 	while j < kids.len() {
 		let child = kids[j];
-		if child != () {
-			let ck = child.kind_id();
-			if ck == kinds::plus {
-				j += 1;
-				continue;
-			}
-			if ck == kinds::string_literal {
-				saw_literal = true;
-			}
-			else if ck == kinds::binary_expression {
-				if !is_string_concat_tree(child) {
-					return false;
-				}
-				saw_literal = true;
-			}
-			else {
+		if child != () && child.kind_id() == kinds::binary_expression {
+			if !concat_tree_all_plus(child) {
 				return false;
 			}
 		}
 		j += 1;
 	}
-	saw_literal
+	true
 }
 
 fn doc_method_invocation(node) {
