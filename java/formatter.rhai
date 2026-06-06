@@ -3249,7 +3249,8 @@ fn doc_method_like(node, body_capture) {
 	else {
 		children(params_node)
 	};
-	let params_doc = if header_prefix.index_of("\n") >= 0 || header_prefix.index_of("\r") >= 0 || (params_node != () && node_is_multiline(params_node)) {
+	let normalized = whitespace::normalize_inline_ws(header_prefix + text(params_node));
+	let params_doc = if header_prefix.index_of("\n") >= 0 || header_prefix.index_of("\r") >= 0 || (params_node != () && (node_is_multiline(params_node) || normalized.len() > max_width)) {
 		doc_formal_parameters_with_indent(params_node, params_children, tab_width * 2)
 	}
 	else {
