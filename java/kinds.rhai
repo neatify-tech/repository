@@ -48,6 +48,7 @@ export const method_declaration = kind_id("java", "method_declaration", true);
 export const object_creation_expression = kind_id("java", "object_creation_expression", true);
 export const method_invocation = kind_id("java", "method_invocation", true);
 export const parenthesized_expression = kind_id("java", "parenthesized_expression", true);
+export const package_declaration = kind_id("java", "package_declaration", true);
 export const type_arguments = kind_id("java", "type_arguments", true);
 export const type_parameters = kind_id("java", "type_parameters", true);
 export const generic_type = kind_id("java", "generic_type", true);

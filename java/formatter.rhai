@@ -1006,6 +1006,7 @@ fn doc_string_literal(node) {
 fn doc_program(node)
 {
 	let k_import = kinds::import_declaration;
+	let k_package = kinds::package_declaration;
 	if node.len == 0 {
 		return doc_text(text(node));
 	}
@@ -1026,7 +1027,11 @@ fn doc_program(node)
 		else {
 			let prev_kind = node.kind(i - 1);
 			let next_kind = node.kind(i);
-			if prev_kind == k_import && next_kind != k_import {
+			if prev_kind == k_package && next_kind != k_package {
+				pieces.push(doc_hardline());
+				pieces.push(doc_hardline());
+			}
+			else if prev_kind == k_import && next_kind != k_import {
 				pieces.push(doc_hardline());
 				pieces.push(doc_hardline());
 			}
