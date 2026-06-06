@@ -2454,6 +2454,13 @@ fn doc_variable_declarator(node) {
 }
 
 fn doc_local_variable_declaration(node) {
+	let modifiers_node = modifiers_node_for(node);
+	if modifiers_node != () {
+		let annotation_ranges = annotation_ranges_from_modifiers(modifiers_node);
+		if annotation_ranges.len() > 0 {
+			return doc_field_or_variable_declaration(node);
+		}
+	}
 	let k_semi = kinds::semi;
 	let k_comma = kinds::comma;
 	let node_children = node.children();
