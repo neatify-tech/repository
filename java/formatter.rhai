@@ -2341,12 +2341,109 @@ fn doc_local_variable_declaration(node) {
 fn doc_field_or_variable_declaration(node) {
 	let k_semi = kinds::semi;
 	let k_comma = kinds::comma;
+	let k_line_comment = kinds::line_comment;
+	let k_block_comment = kinds::block_comment;
 	let node_children = node.children();
+	let has_line_comment = false;
+	let has_annotation = false;
+	let modifiers_node = modifiers_node_for(node);
+	let scan = 0;
+	while scan < node.len {
+		if node.kind(scan) == k_line_comment {
+			has_line_comment = true;
+			break;
+		}
+		scan += 1;
+	}
+	let annotation_ranges = annotation_ranges_from_modifiers(modifiers_node);
+	let modifier_ranges = modifier_ranges_from_modifiers(modifiers_node);
+	let comment_ranges = line_comment_ranges_from_node(node);
+	if annotation_ranges.len() > 0 {
+		has_annotation = true;
+	}
+	if has_line_comment || has_annotation {
+		let raw = text(node);
+		let lines = raw.split("\n");
+		if lines.len() == 0 {
+			return doc_text(raw.trim());
+		}
+		let out_lines = [];
+		let r = byte_range(node);
+		let line_start = start(r);
+		let i = 0;
+		while i < lines.len() {
+			let line = lines[i];
+			if line.ends_with("\r") {
+				line = line.sub_string(0, line.len() - 1);
+			}
+			let stripped = if line.trim().is_empty() {
+				""
+			}
+			else {
+				whitespace::strip_leading_ws(line)
+			};
+			let split_idx = annotation_split_idx_for_line(line, line_start, annotation_ranges, modifier_ranges, comment_ranges);
+			if split_idx > 0 {
+				let trimmed = stripped.trim();
+				let anno_text = trimmed.sub_string(0, split_idx).trim();
+				let rest_text = trimmed.sub_string(split_idx + 1, trimmed.len() - split_idx - 1).trim();
+				out_lines.push(anno_text);
+				if !rest_text.is_empty() {
+					out_lines.push(rest_text);
+				}
+			}
+			else {
+				out_lines.push(stripped);
+			}
+			line_start += line.len() + 1;
+			i += 1;
+		}
+		let parts = [];
+		let j = 0;
+		while j < out_lines.len() {
+			parts.push(doc_text(out_lines[j]));
+			if j < out_lines.len() - 1 {
+				parts.push(doc_hardline());
+			}
+			j += 1;
+		}
+		return doc_concat_list(parts);
+	}
 	let parts = [];
 	let i = 0;
 	let need_space = false;
 	while i < node.len {
 		let k = node.kind(i);
+		if k == k_line_comment || k == k_block_comment {
+			let inline_comment = false;
+			if i > 0 {
+				let prev_range = node.range(i - 1);
+				let comment_range = node.range(i);
+				if prev_range != () && comment_range != () {
+					let prev_line = line_at(end(prev_range));
+					let comment_line = line_at(start(comment_range));
+					if start_offset(prev_line) == start_offset(comment_line) {
+						inline_comment = true;
+					}
+				}
+			}
+			if inline_comment {
+				if need_space {
+					parts.push(doc_text(" "));
+				}
+				parts.push(doc_for_child(node, i));
+			}
+			else {
+				if parts.len() > 0 {
+					parts.push(doc_hardline());
+				}
+				parts.push(doc_for_child(node, i));
+				parts.push(doc_hardline());
+			}
+			need_space = false;
+			i += 1;
+			continue;
+		}
 		if k == k_semi {
 			parts.push(doc_text(";"));
 			need_space = false;
@@ -2372,6 +2469,170 @@ fn doc_field_or_variable_declaration(node) {
 		i += 1;
 	}
 	doc_concat_list(parts)
+}
+
+fn field_has_annotation(node) {
+	let node_children = node.children();
+	if node_children == () {
+		return false;
+	}
+	let i = 0;
+	while i < node_children.len() {
+		let child = node_children[i];
+		if child != () && child.kind_id() == kinds::modifiers {
+			let mod_children = children(child);
+			let mi = 0;
+			while mi < mod_children.len() {
+				let mod_child = mod_children[mi];
+				if mod_child != () {
+					let k = mod_child.kind_id();
+					if k == kinds::annotation || k == kinds::marker_annotation {
+						return true;
+					}
+				}
+				mi += 1;
+			}
+			break;
+		}
+		i += 1;
+	}
+	false
+}
+
+fn modifiers_node_for(node) {
+	let node_children = node.children();
+	if node_children == () {
+		return ();
+	}
+	let i = 0;
+	while i < node_children.len() {
+		let child = node_children[i];
+		if child != () && child.kind_id() == kinds::modifiers {
+			return child;
+		}
+		i += 1;
+	}
+	()
+}
+
+fn annotation_ranges_from_modifiers(modifiers_node) {
+	let ranges = [];
+	if modifiers_node == () {
+		return ranges;
+	}
+	let mod_children = children(modifiers_node);
+	let i = 0;
+	while i < mod_children.len() {
+		let child = mod_children[i];
+		if child != () {
+			let k = child.kind_id();
+			if k == kinds::annotation || k == kinds::marker_annotation {
+				ranges.push(byte_range(child));
+			}
+		}
+		i += 1;
+	}
+	ranges
+}
+
+fn modifier_ranges_from_modifiers(modifiers_node) {
+	let ranges = [];
+	if modifiers_node == () {
+		return ranges;
+	}
+	let mod_children = children(modifiers_node);
+	let i = 0;
+	while i < mod_children.len() {
+		let child = mod_children[i];
+		if child != () {
+			let k = child.kind_id();
+			if k != kinds::annotation && k != kinds::marker_annotation {
+				let text = text(child).trim();
+				if !text.is_empty() {
+					ranges.push(byte_range(child));
+				}
+			}
+		}
+		i += 1;
+	}
+	ranges
+}
+
+fn line_comment_ranges_from_node(node) {
+	let ranges = [];
+	let node_children = node.children();
+	if node_children == () {
+		return ranges;
+	}
+	let i = 0;
+	while i < node_children.len() {
+		let child = node_children[i];
+		if child != () && child.kind_id() == kinds::line_comment {
+			ranges.push(byte_range(child));
+		}
+		i += 1;
+	}
+	ranges
+}
+
+fn annotation_range_for_line(annotation_ranges, line_start, line_end) {
+	let i = 0;
+	while i < annotation_ranges.len() {
+		let r = annotation_ranges[i];
+		let s = start(r);
+		if s >= line_start && s < line_end {
+			return r;
+		}
+		i += 1;
+	}
+	()
+}
+
+fn annotation_split_idx_for_line(line, line_start, annotation_ranges, modifier_ranges, comment_ranges) {
+	let line_end = line_start + line.len();
+	let anno_range = annotation_range_for_line(annotation_ranges, line_start, line_end);
+	if anno_range == () {
+		return -1;
+	}
+	let anno_end = end(anno_range);
+	let has_comment_after = false;
+	let i = 0;
+	while i < comment_ranges.len() {
+		let r = comment_ranges[i];
+		let s = start(r);
+		if s > anno_end && s < line_end {
+			has_comment_after = true;
+			break;
+		}
+		i += 1;
+	}
+	if has_comment_after {
+		return -1;
+	}
+	let has_modifier_after = false;
+	let j = 0;
+	while j < modifier_ranges.len() {
+		let r = modifier_ranges[j];
+		let s = start(r);
+		if s > anno_end && s < line_end {
+			has_modifier_after = true;
+			break;
+		}
+		j += 1;
+	}
+	let leading_ws = whitespace::leading_ws_len(line);
+	let rel_end = anno_end - line_start - leading_ws;
+	if rel_end < 0 {
+		rel_end = 0;
+	}
+	if has_modifier_after {
+		return rel_end;
+	}
+	let trimmed = whitespace::strip_leading_ws(line);
+	if trimmed.len() > rel_end {
+		return rel_end;
+	}
+	-1
 }
 
 fn doc_block(node) {
@@ -2813,6 +3074,9 @@ fn doc_method_like(node, body_capture) {
 	let max_width = configuration::values["max_width"];
 	let tab_width = configuration::values["tab_width"];
 	let node_children = node.children();
+	let modifiers_node = modifiers_node_for(node);
+	let annotation_ranges = annotation_ranges_from_modifiers(modifiers_node);
+	let modifier_ranges = modifier_ranges_from_modifiers(modifiers_node);
 	let params_node = if params_idx >= 0 && params_idx < node_children.len() {
 		node_children[params_idx]
 	}
@@ -2834,17 +3098,7 @@ fn doc_method_like(node, body_capture) {
 	let header_suffix = slice(range(end(node.range(params_idx)), start(node.range(body_idx)))).trim();
 	let body_doc = doc_for_child(node, body_idx);
 	let header_docs = [];
-	if header_prefix.index_of("@") >= 0 {
-		let modifiers_node = ();
-		let mi = 0;
-		while mi < node_children.len() {
-			let child = node_children[mi];
-			if child != () && child.kind_id() == kinds::modifiers {
-				modifiers_node = child;
-				break;
-			}
-			mi += 1;
-		}
+	if annotation_ranges.len() > 0 {
 		if modifiers_node != () {
 			let mod_children = children(modifiers_node);
 			let annotation_docs = [];
@@ -2957,6 +3211,8 @@ fn doc_method_like(node, body_capture) {
 			lines.push(line);
 			li += 1;
 		}
+		let header_start = start(byte_range(node));
+		let line_start = header_start;
 		let i = 0;
 		while i < lines.len() {
 			let line = lines[i];
@@ -2967,7 +3223,9 @@ fn doc_method_like(node, body_capture) {
 			let line_doc = {
 				let trimmed = cleaned.trim();
 				let annotation_doc = ();
-				if trimmed.starts_with("@") && trimmed.len() > max_width {
+				let line_end = line_start + line.len();
+				let anno_range = annotation_range_for_line(annotation_ranges, line_start, line_end);
+				if anno_range != () && trimmed.len() > max_width {
 					let open_idx = trimmed.index_of("(");
 					let close_idx = last_index_of(trimmed, ")");
 					if open_idx >= 0 && close_idx > open_idx {
@@ -3009,27 +3267,9 @@ fn doc_method_like(node, body_capture) {
 					doc_text(trimmed)
 				}
 			};
-			let split_idx = -1;
-			let trimmed_line = cleaned.trim();
-			if trimmed_line.starts_with("@") {
-				let close_idx = last_index_of(trimmed_line, ")");
-				if close_idx >= 0 {
-					let rest = trimmed_line.sub_string(close_idx + 1, trimmed_line.len() - close_idx - 1).trim();
-					if !rest.is_empty() {
-						let rest_lower = rest;
-						if rest_lower.starts_with("public ") || rest_lower.starts_with("protected ") || rest_lower.starts_with("private ") || rest_lower.starts_with("static ") || rest_lower.starts_with("final ") || rest_lower.starts_with("abstract ") {
-							split_idx = close_idx + 1;
-						}
-					}
-				}
-				else {
-					let space_idx = trimmed_line.index_of(" ");
-					if space_idx > 0 {
-						split_idx = space_idx;
-					}
-				}
-			}
+			let split_idx = annotation_split_idx_for_line(line, line_start, annotation_ranges, modifier_ranges, []);
 			if split_idx > 0 {
+				let trimmed_line = cleaned.trim();
 				let anno_text = trimmed_line.sub_string(0, split_idx).trim();
 				let rest_text = trimmed_line.sub_string(split_idx + 1, trimmed_line.len() - split_idx - 1).trim();
 				let anno_doc = doc_text(anno_text);
@@ -3048,40 +3288,21 @@ fn doc_method_like(node, body_capture) {
 				}
 				header_docs.push(line_doc);
 			}
+			line_start += line.len() + 1;
 			i += 1;
 		}
 	}
 	else {
 		let trimmed_line = header_prefix.trim();
-		if trimmed_line.starts_with("@") {
-			let split_idx = -1;
-			let close_idx = last_index_of(trimmed_line, ")");
-			if close_idx >= 0 {
-				let rest = trimmed_line.sub_string(close_idx + 1, trimmed_line.len() - close_idx - 1).trim();
-				if !rest.is_empty() {
-					let rest_lower = rest;
-					if rest_lower.starts_with("public ") || rest_lower.starts_with("protected ") || rest_lower.starts_with("private ") || rest_lower.starts_with("static ") || rest_lower.starts_with("final ") || rest_lower.starts_with("abstract ") {
-						split_idx = close_idx + 1;
-					}
-				}
-			}
-			else {
-				let space_idx = trimmed_line.index_of(" ");
-				if space_idx > 0 {
-					split_idx = space_idx;
-				}
-			}
-			if split_idx > 0 {
-				let anno_text = trimmed_line.sub_string(0, split_idx).trim();
-				let rest_text = trimmed_line.sub_string(split_idx + 1, trimmed_line.len() - split_idx - 1).trim();
-				header_docs.push(doc_text(anno_text));
-				if !rest_text.is_empty() {
-					header_docs.push(doc_hardline());
-					header_docs.push(doc_text(rest_text));
-				}
-			}
-			else {
-				header_docs.push(doc_text(header_prefix));
+		let header_start = start(byte_range(node));
+		let split_idx = annotation_split_idx_for_line(header_prefix, header_start, annotation_ranges, modifier_ranges, []);
+		if split_idx > 0 {
+			let anno_text = trimmed_line.sub_string(0, split_idx).trim();
+			let rest_text = trimmed_line.sub_string(split_idx + 1, trimmed_line.len() - split_idx - 1).trim();
+			header_docs.push(doc_text(anno_text));
+			if !rest_text.is_empty() {
+				header_docs.push(doc_hardline());
+				header_docs.push(doc_text(rest_text));
 			}
 		}
 		else {
@@ -3336,6 +3557,9 @@ fn doc_class_body(node) {
 					k_instance_init
 				);
 				let add_blank = (group != 0 && next_group != 0 && group != next_group) || (group == 2 && next_group == 2) || (group == 3 && next_group == 3);
+				if !add_blank && k == k_field && field_has_annotation(node.child(i)) {
+					add_blank = true;
+				}
 				if add_blank {
 					parts.push(doc_text("\n"));
 				}
