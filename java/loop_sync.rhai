@@ -71,7 +71,26 @@ fn doc_for_statement(node) {
 				i += 1;
 				continue;
 			}
-			header_parts.push(doc_text("; "));
+			let next_idx = {
+				let idx = i + 1;
+				let found = -1;
+				let j = idx;
+				while j < node.len {
+					let nk = node.kind(j);
+					if nk != k_line_comment && nk != k_block_comment {
+						found = j;
+						break;
+					}
+					j += 1;
+				}
+				found
+			};
+			if next_idx >= 0 && node.kind(next_idx) == k_rparen {
+				header_parts.push(doc_text(";"));
+			}
+			else {
+				header_parts.push(doc_text("; "));
+			}
 			i += 1;
 			continue;
 		}
