@@ -965,6 +965,21 @@ fn doc_string_literal(node) {
 		return doc_text(literal_text);
 	}
 	let indent_size = tab_width;
+	let p = node.parent();
+	if p != () && p.kind_id() == kinds::binary_expression {
+		let has_plus = false;
+		let i = 0;
+		while i < p.len {
+			if p.kind(i) == kinds::plus {
+				has_plus = true;
+				break;
+			}
+			i += 1;
+		}
+		if has_plus {
+			indent_size = 0;
+		}
+	}
 	let doc = doc_text("\"" + parts[0] + "\"");
 	let i = 1;
 	while i < parts.len() {
@@ -1179,7 +1194,7 @@ fn doc_operator_expression_inner(node, allow_chain_split) {
 	let in_ternary = parent_is_ternary || has_ancestor_kind(node, kinds::ternary_expression);
 	let allow_logic_wrap = wrap_logic && !in_ternary;
 	let in_args = has_ancestor_kind(node, kinds::argument_list);
-	let allow_plus_wrap = wrap_plus && !in_ternary && !in_args;
+	let allow_plus_wrap = wrap_plus && !in_ternary && (!in_args || is_string_concat_in_args(node));
 	if allow_logic_wrap && allow_chain_split && node.kind_id() == kinds::binary_expression {
 		let kids = node.children();
 		let has_logical = false;
@@ -1245,6 +1260,62 @@ fn doc_operator_expression_inner(node, allow_chain_split) {
 		);
 	}
 	doc_concat_list(head)
+}
+
+fn is_string_concat_in_args(node) {
+	is_string_concat_tree(node)
+}
+
+fn is_string_concat_tree(node) {
+	let k = node.kind_id();
+	if k == kinds::string_literal {
+		return true;
+	}
+	if k != kinds::binary_expression {
+		return false;
+	}
+	let has_plus = false;
+	let saw_literal = false;
+	let i = 0;
+	while i < node.len {
+		if node.kind(i) == kinds::plus {
+			has_plus = true;
+			break;
+		}
+		i += 1;
+	}
+	if !has_plus {
+		return false;
+	}
+	let kids = node.children();
+	if kids == () {
+		return false;
+	}
+	let j = 0;
+	while j < kids.len() {
+		let child = kids[j];
+		if child != () {
+			let ck = child.kind_id();
+			if ck == kinds::plus {
+				j += 1;
+				continue;
+			}
+			if ck == kinds::string_literal {
+				saw_literal = true;
+			}
+			else if ck == kinds::binary_expression {
+				if !is_string_concat_tree(child) {
+					return false;
+				}
+				saw_literal = true;
+			}
+			else {
+				return false;
+			}
+		}
+		j += 1;
+	}
+	saw_literal
 }
 
 fn doc_method_invocation(node) {
