@@ -1815,17 +1815,38 @@ fn doc_annotation(node) {
 
 fn doc_object_creation_expression(node) {
 	let k_class_body = kinds::class_body;
+	let k_arg_list = kinds::argument_list;
+	let k_annot_arg_list = kinds::annotation_argument_list;
 	let class_body_idx = -1;
+	let args_idx = -1;
 	let i = 0;
 	while i < node.len {
-		if node.kind(i) == k_class_body {
+		let k = node.kind(i);
+		if k == k_class_body {
 			class_body_idx = i;
 			break;
+		}
+		if args_idx < 0 && (k == k_arg_list || k == k_annot_arg_list) {
+			args_idx = i;
 		}
 		i += 1;
 	}
 	if class_body_idx < 0 {
-		return doc_text(text(node));
+		if args_idx < 0 {
+			return doc_text(text(node));
+		}
+		let args_node = node.child(args_idx);
+		let header = slice(range(start(byte_range(node)), start(node.range(args_idx)))).trim();
+		let args_doc = if args_node != () && args_node.kind_id() == k_annot_arg_list {
+			let header_len = whitespace::normalize_inline_ws(header).len();
+			let args_text = text(args_node);
+			let max_width = configuration::values["max_width"];
+			doc_annotation_argument_list(args_node, header_len + args_text.len() > max_width)
+		}
+		else {
+			doc_argument_list(args_node)
+		};
+		return doc_concat_list([doc_text(header), args_doc]);
 	}
 	let header = slice(range(start(byte_range(node)), start(node.range(class_body_idx)))).trim();
 	let class_body_doc = doc_for_child(node, class_body_idx);
