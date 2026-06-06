@@ -537,7 +537,8 @@ fn root_wrap_should_wrap(node) {
 		return false;
 	}
 	let max_width = configuration::values["max_width"];
-	if node_len(node) > max_width || node_is_multiline(node) {
+	let normalized = whitespace::normalize_inline_ws(text(node));
+	if normalized.len() > max_width || node_is_multiline(node) {
 		return true;
 	}
 	let parent = node.parent();
@@ -547,7 +548,7 @@ fn root_wrap_should_wrap(node) {
 	else {
 		()
 	};
-	if parent_first != () && parent_first.len() > max_width {
+	if parent_first != () && whitespace::normalize_inline_ws(parent_first).len() > max_width {
 		return true;
 	}
 	let binary_node = if parent != () {
@@ -562,7 +563,7 @@ fn root_wrap_should_wrap(node) {
 	else {
 		()
 	};
-	if binary_first != () && binary_first.len() > max_width {
+	if binary_first != () && whitespace::normalize_inline_ws(binary_first).len() > max_width {
 		return true;
 	}
 	let paren_node = if parent != () {
@@ -577,7 +578,7 @@ fn root_wrap_should_wrap(node) {
 	else {
 		()
 	};
-	if paren_first != () && paren_first.len() > max_width {
+	if paren_first != () && whitespace::normalize_inline_ws(paren_first).len() > max_width {
 		return true;
 	}
 	false
@@ -1225,8 +1226,9 @@ fn doc_operator_expression_inner(node, allow_chain_split) {
 	let head = [];
 	let tail = [];
 	let i = 0;
-	let wrap_plus = node_len(node) > max_width || node_is_multiline(node);
-	let wrap_logic = node_len(node) > max_width || node_is_multiline(node);
+	let normalized = whitespace::normalize_inline_ws(text(node));
+	let wrap_plus = normalized.len() > max_width || node_is_multiline(node);
+	let wrap_logic = normalized.len() > max_width || node_is_multiline(node);
 	let indent_size = if wrap_logic && is_block_condition(node) {
 		tab_width * 2
 	}
@@ -1445,9 +1447,12 @@ fn doc_method_invocation(node) {
 		let receiver_is_identifier = receiver_kind == kinds::identifier || receiver_kind == kinds::scoped_identifier;
 		if parent_is_invocation && receiver_kind == kinds::identifier && args_idx >= 0 && node_children != () {
 			let args_node = node_children[args_idx];
-			if args_node != () && (node_is_multiline(args_node) || args_node.token_len() > max_width) {
+			if args_node != () {
+				let args_norm_len = whitespace::normalize_inline_ws(text(args_node)).len();
+				if node_is_multiline(args_node) || args_norm_len > max_width {
 				let indent_size = configuration::values["tab_width"];
 				args_doc = doc_indent(indent_size, args_doc);
+				}
 			}
 		}
 		let chain_context = receiver_is_invocation || parent_is_invocation || receiver_has_invocation || parent_is_field_access;
@@ -1462,16 +1467,18 @@ fn doc_method_invocation(node) {
 		if chain_context {
 			let chain_text = slice(root_range);
 			let chain_norm_len = whitespace::normalize_inline_ws(chain_text).len();
-			let chain_len = root.token_len();
+			let chain_len = chain_norm_len;
 			let in_ternary = has_ancestor_kind(node, kinds::ternary_expression) || has_ancestor_kind(node, kinds::conditional_expression);
 			let parent_len = if parent != () {
-				parent.token_len()
+				let raw = text(parent);
+				whitespace::normalize_inline_ws(raw).len()
 			}
 			else {
 				()
 			};
 			let args_len = if args_idx >= 0 {
-				node_children[args_idx].token_len()
+				let raw = text(node_children[args_idx]);
+				whitespace::normalize_inline_ws(raw).len()
 			}
 			else {
 				()
@@ -1484,7 +1491,8 @@ fn doc_method_invocation(node) {
 				()
 			};
 			let binary_len = if binary_node != () {
-				binary_node.token_len()
+				let raw = text(binary_node);
+				whitespace::normalize_inline_ws(raw).len()
 			}
 			else {
 				()
@@ -1497,7 +1505,8 @@ fn doc_method_invocation(node) {
 				()
 			};
 			let paren_len = if paren_node != () {
-				paren_node.token_len()
+				let raw = text(paren_node);
+				whitespace::normalize_inline_ws(raw).len()
 			}
 			else {
 				()
@@ -1627,12 +1636,34 @@ fn doc_argument_list(node) {
 	let preserve_newlines = configuration::values["preserve_arg_newlines"];
 	let should_break = false;
 	if preserve_newlines {
-		should_break = node_len(node) > max_width || node_is_multiline(node);
+		let normalized = whitespace::normalize_inline_ws(slice(byte_range(node)));
+		should_break = normalized.len() > max_width || node_is_multiline(node);
 	}
 	else {
 		let raw = slice(byte_range(node));
 		let normalized = whitespace::normalize_inline_ws(raw);
-		should_break = normalized.len() > max_width;
+		let compact = normalized;
+		let idx = compact.index_of("( ");
+		while idx >= 0 {
+			compact = compact.sub_string(0, idx + 1) + compact.sub_string(idx + 2, compact.len() - idx - 2);
+			idx = compact.index_of("( ");
+		}
+		idx = compact.index_of(" )");
+		while idx >= 0 {
+			compact = compact.sub_string(0, idx) + compact.sub_string(idx + 1, compact.len() - idx - 1);
+			idx = compact.index_of(" )");
+		}
+		idx = compact.index_of(" .");
+		while idx >= 0 {
+			compact = compact.sub_string(0, idx) + compact.sub_string(idx + 1, compact.len() - idx - 1);
+			idx = compact.index_of(" .");
+		}
+		idx = compact.index_of(". ");
+		while idx >= 0 {
+			compact = compact.sub_string(0, idx + 1) + compact.sub_string(idx + 2, compact.len() - idx - 2);
+			idx = compact.index_of(". ");
+		}
+		should_break = compact.len() > max_width;
 	}
 	let args = [];
 	let i = 0;
@@ -1757,7 +1788,8 @@ fn doc_annotation_argument_list(node, force_break) {
 		return doc_text("()");
 	}
 	let max_width = configuration::values["max_width"];
-	let should_break = force_break || node_len(node) > max_width || node_is_multiline(node);
+	let normalized = whitespace::normalize_inline_ws(text(node));
+	let should_break = force_break || normalized.len() > max_width || node_is_multiline(node);
 	if args.len() <= 1 {
 		should_break = false;
 	}
@@ -1901,7 +1933,8 @@ fn doc_formal_parameters(node) {
 		return doc_text(raw.trim());
 	}
 	let max_width = configuration::values["max_width"];
-	let should_break = node_len(node) > max_width || node_is_multiline(node);
+	let normalized = whitespace::normalize_inline_ws(raw);
+	let should_break = normalized.len() > max_width || node_is_multiline(node);
 	let parts = [];
 	let j = 0;
 	while j < params.len() {
@@ -1964,7 +1997,8 @@ fn doc_formal_parameters_with_indent(node, children_nodes, indent_size) {
 		return doc_text(raw.trim());
 	}
 	let max_width = configuration::values["max_width"];
-	let should_break = node_len(node) > max_width || node_is_multiline(node);
+	let normalized = whitespace::normalize_inline_ws(raw);
+	let should_break = normalized.len() > max_width || node_is_multiline(node);
 	let parts = [];
 	let j = 0;
 	while j < params.len() {
@@ -2207,7 +2241,8 @@ fn doc_ternary_expression(node) {
 		count
 	};
 	let normalized = whitespace::normalize_inline_ws(raw);
-	let should_break = cond_raw.index_of("\n") >= 0 || base_cols + cond_raw.len() > max_width || logical_ops >= 3 || normalized.len() > max_width;
+	let cond_norm_len = whitespace::normalize_inline_ws(cond_raw).len();
+	let should_break = cond_raw.index_of("\n") >= 0 || base_cols + cond_norm_len > max_width || logical_ops >= 3 || normalized.len() > max_width;
 	let cond_doc = if cond_node != () && cond_node.kind_id() == kinds::binary_expression {
 		// TODO: may want to make this into a configuration parameter, the overall question is: do we want to force the boolean condition to wrap if the ternary is long?
 		// i think if the boolean condition is short but the ternary is long, the boolean can remain on one line
@@ -2291,7 +2326,8 @@ fn doc_parenthesized_expression(node) {
 		return doc_text("()");
 	}
 	let max_width = configuration::values["max_width"];
-	let should_break = node_len(node) > max_width || node_is_multiline(node);
+	let normalized = whitespace::normalize_inline_ws(text(node));
+	let should_break = normalized.len() > max_width || node_is_multiline(node);
 	if should_break && parts.len() > 1 {
 		let indent_size = configuration::values["tab_width"];
 		let first = parts[0];
