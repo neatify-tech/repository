@@ -1705,7 +1705,9 @@ fn doc_arguments(node) {
 		found
 	};
 	let max_width = configuration::values["max_width"];
-	let should_break = node.token_len() > max_width || has_block_arg;
+	let raw = slice(byte_range(node));
+	let normalized = whitespace::normalize_inline_ws(raw);
+	let should_break = normalized.len() > max_width || has_block_arg;
 	let parts = [];
 	let j = 0;
 	while j < args.len() {
@@ -1785,6 +1787,41 @@ fn doc_string_literal(node) {
 	if inner.len() + 2 <= max_width {
 		return doc_text(literal_text);
 	}
+	let parent_has_plus = false;
+	let parent_is_first_operand = false;
+	let p = node.parent();
+	if p != () && p.kind_id() == kinds::binary_expression {
+		let i = 0;
+		while i < p.len {
+			if p.kind(i) == kinds::plus {
+				parent_has_plus = true;
+				break;
+			}
+			i += 1;
+		}
+		if parent_has_plus {
+			let kids = p.children();
+			if kids != () {
+				let j = 0;
+				while j < kids.len() {
+					let child = kids[j];
+					if child != () {
+						let ck = child.kind_id();
+						let is_comment = ck == kinds::comment;
+						if !is_comment && ck != kinds::plus {
+							let cr = byte_range(child);
+							let nr = byte_range(node);
+							if start(cr) == start(nr) && end(cr) == end(nr) {
+								parent_is_first_operand = true;
+							}
+							break;
+						}
+					}
+					j += 1;
+				}
+			}
+		}
+	}
 	let r = byte_range(node);
 	let line_info = line_at(start(r));
 	let line_start = start_offset(line_info);
@@ -1808,7 +1845,12 @@ fn doc_string_literal(node) {
 		levels
 	};
 	let base_cols = indent_levels * tab_width;
-	let prefix_cols = base_cols + prefix_cols_raw;
+	let prefix_cols = if parent_has_plus {
+		base_cols
+	}
+	else {
+		base_cols + prefix_cols_raw
+	};
 	let first_max = max_width - prefix_cols - 2;
 	if first_max < 1 {
 		return doc_text(literal_text);
@@ -1853,11 +1895,25 @@ fn doc_string_literal(node) {
 	let doc = doc_text(quote + parts[0] + quote);
 	let i = 1;
 	while i < parts.len() {
+		let cont_indent = if parent_has_plus {
+			if !parent_is_first_operand {
+				0
+			}
+			else if i > 1 {
+				0
+			}
+			else {
+				indent_size
+			}
+		}
+		else {
+			indent_size
+		};
 		doc = doc_concat_list(
 			[
 				doc,
 				doc_indent(
-					indent_size,
+					cont_indent,
 					doc_concat_list(
 						[
 							doc_hardline(),
@@ -2045,6 +2101,57 @@ fn doc_formal_parameters(node) {
 	doc_concat_list([doc_text("("), doc_concat_list(parts), doc_text(")")])
 }
 
+fn is_string_concat_in_args(node) {
+	if node == () || node.kind_id() != kinds::binary_expression {
+		return false;
+	}
+	let r = byte_range(node);
+	let matches = query("typescript", "(string) @s", r);
+	if matches.len() == 0 {
+		return false;
+	}
+	concat_tree_all_plus(node)
+}
+
+fn concat_tree_all_plus(node) {
+	if node == () {
+		return true;
+	}
+	if node.kind_id() != kinds::binary_expression {
+		return true;
+	}
+	let has_plus = false;
+	let i = 0;
+	while i < node.len {
+		let op = node.kind(i);
+		if op == kinds::plus {
+			has_plus = true;
+		}
+		else if op == kinds::minus || op == kinds::star || op == kinds::slash || op == kinds::percent || op == kinds::and_and || op == kinds::or_or || op == kinds::amp || op == kinds::pipe || op == kinds::caret || op == kinds::shl || op == kinds::shr || op == kinds::ushr || op == kinds::eq_eq || op == kinds::not_eq || op == kinds::eq_eq_eq || op == kinds::not_eq_eq || op == kinds::lt || op == kinds::gt || op == kinds::lt_eq || op == kinds::gt_eq || op == kinds::coalesce || op == kinds::pow {
+			return false;
+		}
+		i += 1;
+	}
+	if !has_plus {
+		return false;
+	}
+	let kids = node.children();
+	if kids == () {
+		return true;
+	}
+	let j = 0;
+	while j < kids.len() {
+		let child = kids[j];
+		if child != () && child.kind_id() == kinds::binary_expression {
+			if !concat_tree_all_plus(child) {
+				return false;
+			}
+		}
+		j += 1;
+	}
+	true
+}
+
 fn doc_binary_expression(node) {
 	let op_ids = [
 		kinds::assign,
@@ -2095,6 +2202,7 @@ fn doc_binary_expression(node) {
 	let tail = [];
 	let i = 0;
 	let wrap_logic = raw.len() > max_width || raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0;
+	let wrap_plus = raw.len() > max_width || raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0;
 	let is_nested = is_nested_block_condition(node);
 	let indent_size = if wrap_logic && is_block_condition(node) {
 		tab_width * 2
@@ -2109,6 +2217,8 @@ fn doc_binary_expression(node) {
 	let parent_is_ternary = parent != () && parent.kind_id() == kinds::ternary_expression;
 	let in_ternary = parent_is_ternary || has_ancestor_kind(node, kinds::ternary_expression);
 	let allow_logic_wrap = wrap_logic && !in_ternary && (is_block_condition(node) || is_nested);
+	let in_args = has_ancestor_kind(node, kinds::arguments);
+	let allow_plus_wrap = wrap_plus && in_args && is_string_concat_in_args(node);
 	if allow_logic_wrap {
 		let kids = node.children();
 		let has_logical = false;
@@ -2135,7 +2245,7 @@ fn doc_binary_expression(node) {
 		let k = node.kind(i);
 		if op_ids.index_of(k) >= 0 {
 			let op_text = slice(node.range(i)).trim();
-			let should_wrap_op = allow_logic_wrap && (op_text == "&&" || op_text == "||" || op_text == "&" || op_text == "|" || op_text == "^");
+			let should_wrap_op = (allow_plus_wrap && op_text == "+") || (allow_logic_wrap && (op_text == "&&" || op_text == "||" || op_text == "&" || op_text == "|" || op_text == "^"));
 			if should_wrap_op {
 				wrapped = true;
 				tail.push(doc_hardline());
@@ -2333,7 +2443,9 @@ fn doc_ternary_expression(node) {
 		}
 		count
 	};
-	let should_break = cond_raw.index_of("\n") >= 0 || prefix_cols + cond_raw.len() > max_width || logical_ops >= 3;
+	let raw = text(node);
+	let normalized = whitespace::normalize_inline_ws(raw);
+	let should_break = prefix_cols + cond_raw.len() > max_width || logical_ops >= 3 || normalized.len() > max_width;
 	let cond_doc = if cond_node != () && cond_node.kind_id() == kinds::binary_expression {
 		let force_wrap_ternary_condition = true;
 		let force_wrap = should_break && force_wrap_ternary_condition;
