@@ -56,4 +56,8 @@ fn indent_string(level, indent_style, tab_width) {
 fn text_cols(text, tab_width) {
 	shared_ws::text_cols(text, tab_width)
 }
+
+fn find_wrap_break(text, max_len, backtrack_limit, overflow_limit) {
+	shared_ws::find_wrap_break(text, max_len, backtrack_limit, overflow_limit)
+}
 // Exports are implicit via module import.

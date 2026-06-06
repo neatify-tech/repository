@@ -952,9 +952,13 @@ fn doc_string_literal(node) {
 			parts.push(remaining);
 			break;
 		}
-		let chunk = remaining.sub_string(0, take);
+		let break_idx = whitespace::find_wrap_break(remaining, take, 12, 12);
+		if break_idx < 1 {
+			break_idx = take;
+		}
+		let chunk = remaining.sub_string(0, break_idx);
 		parts.push(chunk);
-		remaining = remaining.sub_string(take, remaining.len() - take);
+		remaining = remaining.sub_string(break_idx, remaining.len() - break_idx);
 		first = false;
 	}
 	if parts.len() <= 1 {
