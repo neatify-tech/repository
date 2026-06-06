@@ -1461,7 +1461,9 @@ fn doc_method_invocation(node) {
 		let base_wrap = false;
 		if chain_context {
 			let chain_text = slice(root_range);
+			let chain_norm_len = whitespace::normalize_inline_ws(chain_text).len();
 			let chain_len = root.token_len();
+			let in_ternary = has_ancestor_kind(node, kinds::ternary_expression) || has_ancestor_kind(node, kinds::conditional_expression);
 			let parent_len = if parent != () {
 				parent.token_len()
 			}
@@ -1502,6 +1504,12 @@ fn doc_method_invocation(node) {
 			};
 			let paren_too_long = paren_len != () && paren_len > max_width;
 			base_wrap = chain_len > max_width || ((chain_text.index_of("\n") >= 0 || chain_text.index_of("\r") >= 0) && chain_has_invocation) || (parent_len != () && parent_len > max_width) || args_too_long || binary_too_long || paren_too_long;
+			if base_wrap && in_ternary && chain_norm_len <= max_width {
+				base_wrap = false;
+			}
+			if !base_wrap && in_ternary && chain_norm_len > max_width {
+				base_wrap = true;
+			}
 		}
 		let chain_lambda = false;
 		let chain_has_class_body = false;
