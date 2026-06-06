@@ -371,6 +371,7 @@ fn header_with_generic_text(node, end_pos) {
 	out
 }
 
+
 fn has_anonymous_class_body(range) {
 	if range == () {
 		return false;
@@ -1327,6 +1328,13 @@ fn doc_method_invocation(node) {
 			}
 		}
 		let receiver_is_identifier = receiver_kind == kinds::identifier || receiver_kind == kinds::scoped_identifier;
+		if parent_is_invocation && receiver_kind == kinds::identifier && args_idx >= 0 && node_children != () {
+			let args_node = node_children[args_idx];
+			if args_node != () && (node_is_multiline(args_node) || args_node.token_len() > max_width) {
+				let indent_size = configuration::values["tab_width"];
+				args_doc = doc_indent(indent_size, args_doc);
+			}
+		}
 		let chain_context = receiver_is_invocation || parent_is_invocation || receiver_has_invocation || parent_is_field_access;
 		let chain_has_invocation = receiver_is_invocation || parent_is_invocation || receiver_has_invocation || parent_is_field_access;
 		let args_range = if args_idx >= 0 {
