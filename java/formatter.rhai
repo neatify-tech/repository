@@ -3168,13 +3168,7 @@ fn doc_block(node) {
 		);
 	}
 	if parts.len() == 0 {
-		return doc_concat_list(
-			[
-				doc_text("{"),
-				doc_hardline(),
-				closing
-			]
-		);
+		return doc_text("{}");
 	}
 	let inner = doc_concat_list(parts);
 	if leading_blank_line {
@@ -3481,22 +3475,65 @@ fn doc_method_like(node, body_capture) {
 
 fn doc_class_like(node) {
 	let k_class_body = kinds::class_body;
+	let k_formal_params = kinds::formal_parameters;
 	let body_idx = -1;
+	let params_idx = -1;
 	let i = 0;
 	while i < node.len {
-		if node.kind(i) == k_class_body {
+		let k = node.kind(i);
+		if k == k_class_body {
 			body_idx = i;
 			break;
+		}
+		if k == k_formal_params {
+			params_idx = i;
 		}
 		i += 1;
 	}
 	if body_idx < 0 {
 		return doc_text(text(node));
 	}
-	let header = header_with_generic_text(node, start(node.range(body_idx))).trim();
+	if params_idx < 0 {
+		let header = header_with_generic_text(node, start(node.range(body_idx))).trim();
+		let body_doc = doc_for_child(node, body_idx);
+		return doc_concat_list([
+			doc_text(header),
+			doc_text(" "),
+			body_doc
+		]);
+	}
+	let header_prefix = header_with_generic_text(node, start(node.range(params_idx))).trim();
+	let max_width = configuration::values["max_width"];
+	let tab_width = configuration::values["tab_width"];
+	let node_children = node.children();
+	let params_node = if params_idx >= 0 && params_idx < node_children.len() {
+		node_children[params_idx]
+	}
+	else {
+		()
+	};
+	let params_children = if params_node == () {
+		[]
+	}
+	else {
+		children(params_node)
+	};
+	let normalized = whitespace::normalize_inline_ws(header_prefix + text(params_node));
+	let params_doc = if header_prefix.index_of("\n") >= 0 || header_prefix.index_of("\r") >= 0 || (params_node != () && (node_is_multiline(params_node) || normalized.len() > max_width)) {
+		doc_formal_parameters_with_indent(params_node, params_children, tab_width * 2)
+	}
+	else {
+		doc_for_child(node, params_idx)
+	};
+	let header_suffix = slice(range(end(node.range(params_idx)), start(node.range(body_idx)))).trim();
 	let body_doc = doc_for_child(node, body_idx);
+	let header_parts = [doc_text(header_prefix), params_doc];
+	if !header_suffix.is_empty() {
+		header_parts.push(doc_text(" "));
+		header_parts.push(doc_text(header_suffix));
+	}
 	doc_concat_list([
-		doc_text(header),
+		doc_concat_list(header_parts),
 		doc_text(" "),
 		body_doc
 	])
@@ -3613,13 +3650,20 @@ fn doc_class_body(node) {
 	let k_instance_init = kinds::instance_initializer;
 	let parts = [];
 	let last_member_idx = -1;
+	let has_comment = false;
 	let scan = 0;
 	while scan < node.len {
 		let k = node.kind(scan);
+		if k == k_line_comment || k == k_block_comment {
+			has_comment = true;
+		}
 		if k != k_lbrace && k != k_rbrace && k != k_line_comment && k != k_block_comment {
 			last_member_idx = scan;
 		}
 		scan += 1;
+	}
+	if last_member_idx < 0 && !has_comment {
+		return doc_text("{}");
 	}
 	let prev_group = 0;
 	let i = 0;

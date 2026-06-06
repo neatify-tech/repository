@@ -3,6 +3,5 @@ class LambdaParenthesized {
 		call((x -> x + 1));
 	}
 
-	private void call(java.util.function.Function<Integer, Integer> f) {
-	}
+	private void call(java.util.function.Function<Integer, Integer> f) {}
 }

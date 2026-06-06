@@ -21,6 +21,5 @@ class ParenChain {
 		}
 	}
 
-	void go() {
-	}
+	void go() {}
 }

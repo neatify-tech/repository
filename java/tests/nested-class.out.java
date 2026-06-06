@@ -6,6 +6,7 @@ public class McpResource {
 		public JsonNode initialize;
 
 		public ServerStatus() {
+			// comment here
 		}
 
 		public ServerStatus(boolean running, String command, JsonNode capabilities, JsonNode initialize) {

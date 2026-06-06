@@ -30,6 +30,5 @@ public class Sample {
 		}
 	}
 
-	public static void call() {
-	}
+	public static void call() {}
 }

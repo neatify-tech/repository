@@ -13,6 +13,5 @@ class ChainTypeArgs {
 		}
 	}
 
-	static class Bar {
-	}
+	static class Bar {}
 }
