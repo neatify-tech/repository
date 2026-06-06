@@ -1199,7 +1199,7 @@ fn doc_operator_expression_inner(node, allow_chain_split) {
 	let in_ternary = parent_is_ternary || has_ancestor_kind(node, kinds::ternary_expression);
 	let allow_logic_wrap = wrap_logic && !in_ternary;
 	let in_args = has_ancestor_kind(node, kinds::argument_list);
-	let allow_plus_wrap = wrap_plus && !in_ternary && (!in_args || is_string_concat_in_args(node));
+	let allow_plus_wrap = wrap_plus && (!in_ternary || is_string_concat_in_args(node)) && (!in_args || is_string_concat_in_args(node));
 	if allow_logic_wrap && allow_chain_split && node.kind_id() == kinds::binary_expression {
 		let kids = node.children();
 		let has_logical = false;
@@ -2131,7 +2131,7 @@ fn doc_ternary_expression(node) {
 		}
 		count
 	};
-	let should_break = cond_raw.index_of("\n") >= 0 || prefix_cols + cond_raw.len() > max_width || logical_ops >= 3;
+	let should_break = cond_raw.index_of("\n") >= 0 || prefix_cols + cond_raw.len() > max_width || logical_ops >= 3 || node_len(node) > max_width;
 	let cond_doc = if cond_node != () && cond_node.kind_id() == kinds::binary_expression {
 		// TODO: may want to make this into a configuration parameter, the overall question is: do we want to force the boolean condition to wrap if the ternary is long?
 		// i think if the boolean condition is short but the ternary is long, the boolean can remain on one line

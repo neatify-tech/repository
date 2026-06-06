@@ -3,12 +3,14 @@ class FormatterLoop {
 		String read = "";
 		return write(
 			"path",
-			(read == null ? "" : read + (ensureNewline != null
-					&& ensureNewline
-					&& !read.endsWith("\n")
-					&& !read.isEmpty()
-				? "\n"
-				: "")) + content
+			(read == null
+				? ""
+				: read + (ensureNewline != null
+						&& ensureNewline
+						&& !read.endsWith("\n")
+						&& !read.isEmpty()
+					? "\n"
+					: "")) + content
 		);
 	}
 
