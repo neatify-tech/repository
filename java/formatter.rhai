@@ -1611,9 +1611,15 @@ fn doc_argument_list(node) {
 	let k_rparen = kinds::rparen;
 	let k_comma = kinds::comma;
 	let max_width = configuration::values["max_width"];
-	let should_break = node_len(node) > max_width;
-	if configuration::values["preserve_arg_newlines"] {
-		should_break = should_break || node_is_multiline(node);
+	let preserve_newlines = configuration::values["preserve_arg_newlines"];
+	let should_break = false;
+	if preserve_newlines {
+		should_break = node_len(node) > max_width || node_is_multiline(node);
+	}
+	else {
+		let raw = slice(byte_range(node));
+		let normalized = whitespace::normalize_inline_ws(raw);
+		should_break = normalized.len() > max_width;
 	}
 	let args = [];
 	let i = 0;
@@ -2165,7 +2171,8 @@ fn doc_ternary_expression(node) {
 		}
 		count
 	};
-	let should_break = cond_raw.index_of("\n") >= 0 || prefix_cols + cond_raw.len() > max_width || logical_ops >= 3 || node_len(node) > max_width;
+	let normalized = whitespace::normalize_inline_ws(raw);
+	let should_break = cond_raw.index_of("\n") >= 0 || prefix_cols + cond_raw.len() > max_width || logical_ops >= 3 || normalized.len() > max_width;
 	let cond_doc = if cond_node != () && cond_node.kind_id() == kinds::binary_expression {
 		// TODO: may want to make this into a configuration parameter, the overall question is: do we want to force the boolean condition to wrap if the ternary is long?
 		// i think if the boolean condition is short but the ternary is long, the boolean can remain on one line
