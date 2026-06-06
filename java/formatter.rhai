@@ -3089,7 +3089,7 @@ fn doc_method_like(node, body_capture) {
 	else {
 		children(params_node)
 	};
-	let params_doc = if header_prefix.index_of("\n") >= 0 || header_prefix.index_of("\r") >= 0 {
+	let params_doc = if header_prefix.index_of("\n") >= 0 || header_prefix.index_of("\r") >= 0 || (params_node != () && node_is_multiline(params_node)) {
 		doc_formal_parameters_with_indent(params_node, params_children, tab_width * 2)
 	}
 	else {
