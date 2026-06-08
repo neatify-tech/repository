@@ -426,11 +426,62 @@ fn doc_element(node) {
 	let inner_docs = [];
 	i = 0;
 	while i < content.len() {
-		inner_docs.push(doc_for_child(node, content[i]));
-		if i < content.len() - 1 {
+		let idx = content[i];
+		let k = node.kind(idx);
+		if k == k_text || k == k_raw || k == kinds::interpolation {
+			let inline_docs = [];
+			let prev_range = ();
+			let prev_kind = -1;
+			while i < content.len() {
+				idx = content[i];
+				k = node.kind(idx);
+				if k != k_text && k != k_raw && k != kinds::interpolation {
+					break;
+				}
+				let r = node.range(idx);
+				let raw = slice(r);
+				if prev_kind == kinds::interpolation && (k == k_text || k == k_raw) {
+					if raw.starts_with(" ") || raw.starts_with("\t") {
+						inline_docs.push(doc_text(" "));
+					}
+				}
+				if prev_range != () {
+					let gap = slice(range(end(prev_range), start(r)));
+					if gap.len() > 0 && trim(gap) == "" {
+						inline_docs.push(doc_text(" "));
+					}
+				}
+				let d = doc_for_child(node, idx);
+				if d != () {
+					inline_docs.push(d);
+				}
+				let next_idx = if i + 1 < content.len() {
+					content[i + 1]
+				}
+				else {
+					-1
+				};
+				if next_idx >= 0 {
+					let next_kind = node.kind(next_idx);
+					if (k == k_text || k == k_raw) && next_kind == kinds::interpolation {
+						if raw.ends_with(" ") || raw.ends_with("\t") {
+							inline_docs.push(doc_text(" "));
+						}
+					}
+				}
+				prev_range = r;
+				prev_kind = k;
+				i += 1;
+			}
+			inner_docs.push(doc_concat_list(inline_docs));
+		}
+		else {
+			inner_docs.push(doc_for_child(node, idx));
+			i += 1;
+		}
+		if i < content.len() {
 			inner_docs.push(doc_hardline());
 		}
-		i += 1;
 	}
 	let indent_size = configuration::values["tab_width"];
 	doc_concat_list([
