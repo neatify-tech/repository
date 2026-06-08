@@ -2650,6 +2650,28 @@ fn doc_array_expression(node) {
 	if items.len() == 0 {
 		return doc_text("[]");
 	}
+	let max_width = configuration::values["max_width"];
+	let raw = slice(byte_range(node));
+	let normalized = whitespace::normalize_inline_ws(raw);
+	let should_break = normalized.len() > max_width || raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0;
+	if should_break {
+		let inner = [];
+		let j = 0;
+		while j < items.len() {
+			inner.push(doc_concat_list([items[j], doc_text(",")]));
+			if j < items.len() - 1 {
+				inner.push(doc_hardline());
+			}
+			j += 1;
+		}
+		let indent_size = configuration::values["tab_width"];
+		return doc_concat_list([
+			doc_text("["),
+			doc_indent(indent_size, doc_concat_list([doc_hardline(), doc_concat_list(inner)])),
+			doc_hardline(),
+			doc_text("]")
+		]);
+	}
 	let parts = [];
 	let j = 0;
 	while j < items.len() {
