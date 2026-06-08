@@ -295,8 +295,16 @@ fn doc_element(node) {
 	let max_width = configuration::values["max_width"];
 	let tag_name = tag_name;
 	let inline_allowed = inline_container_tag(tag_name);
-	let no_newlines = raw.index_of("\n") < 0 && raw.index_of("\r") < 0;
-	let fits = raw.len() <= max_width;
+	let allow_inline_newlines = inline_allowed;
+	let content_raw = raw;
+	if content.len() > 0 {
+		let first_r = node.range(content[0]);
+		let last_r = node.range(content[content.len() - 1]);
+		content_raw = slice(range(start(first_r), end(last_r)));
+	}
+	let normalized = whitespace::normalize_inline_ws(content_raw);
+	let no_newlines = allow_inline_newlines || (content_raw.index_of("\n") < 0 && content_raw.index_of("\r") < 0);
+	let fits = normalized.len() <= max_width;
 	let inline_ok = false;
 	if inline_allowed && no_newlines && fits {
 		let j = 0;
@@ -333,13 +341,13 @@ fn doc_element(node) {
 			}
 			let r = node.range(idx);
 			let raw = slice(r);
-			if raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0 {
+			if !allow_inline_newlines && (raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0) {
 				all_simple = false;
 				break;
 			}
 			j += 1;
 		}
-		simple_inline = all_simple;
+		simple_inline = all_simple && fits;
 	}
 	if content.len() == 1 {
 		let idx = content[0];
@@ -347,8 +355,14 @@ fn doc_element(node) {
 		if k == k_text || k == k_raw || k == kinds::interpolation {
 			let r = node.range(idx);
 			let raw = slice(r);
-			if raw.index_of("\n") < 0 && raw.index_of("\r") < 0 {
+			if raw.index_of("\n") < 0 && raw.index_of("\r") < 0 && fits {
 				return doc_concat_list([start_doc, doc_range(start(r), end(r)), end_doc]);
+			}
+			if allow_inline_newlines && fits {
+				let inner_doc = doc_for_child(node, idx);
+				if inner_doc != () {
+					return doc_concat_list([start_doc, inner_doc, end_doc]);
+				}
 			}
 		}
 	}
@@ -365,7 +379,10 @@ fn doc_element(node) {
 					inline_docs.push(doc_text(" "));
 				}
 			}
-			inline_docs.push(doc_range(start(r), end(r)));
+			let d = doc_for_child(node, idx);
+			if d != () {
+				inline_docs.push(d);
+			}
 			prev_range = r;
 			j += 1;
 		}

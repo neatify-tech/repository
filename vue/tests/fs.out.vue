@@ -27,23 +27,17 @@
 					<button
 						type="button"
 						:class="{ active: searchMode === 'name' }"
-						@click="setSearchMode('name')">
-						Name
-					</button>
+						@click="setSearchMode('name')">Name</button>
 					<button
 						type="button"
 						:class="{ active: searchMode === 'content' }"
-						@click="setSearchMode('content')">
-						Content
-					</button>
+						@click="setSearchMode('content')">Content</button>
 				</div>
 				<button
 					class="refresh"
 					type="button"
 					@click="refreshAll"
-					:disabled="loading">
-					Refresh
-				</button>
+					:disabled="loading">Refresh</button>
 			</div>
 		</header>
 		<div class="status-bar">
