@@ -2714,7 +2714,7 @@ fn doc_object_expression(node) {
 		let k = node.kind(i);
 		if k == kinds::pair || k == kinds::shorthand_property_identifier || k == kinds::spread_element || k == kinds::method_definition {
 			fields.push(doc_for_child(node, i));
-			field_texts.push(slice(node.range(i)).trim());
+			field_texts.push(whitespace::normalize_inline_ws(slice(node.range(i))));
 		}
 		i += 1;
 	}
