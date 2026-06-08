@@ -365,11 +365,15 @@ fn member_expression_breaks_chain(node) {
 	}
 	let info = chain_root_info(node);
 	let root = info[0];
+	let saw_args = info[1];
 	let wrap_chain = root.token_len() > configuration::values["max_width"];
 	let receiver_kind = node.kind(receiver_idx);
 	let receiver_is_chain = receiver_kind == kinds::call_expression || receiver_kind == kinds::member_expression;
 	let receiver_range = node.range(receiver_idx);
 	let root_range = byte_range(root);
+	if saw_args && !receiver_is_chain {
+		return false;
+	}
 	wrap_chain && (receiver_is_chain || start(receiver_range) != start(root_range))
 }
 
@@ -2201,8 +2205,9 @@ fn doc_binary_expression(node) {
 	let head = [];
 	let tail = [];
 	let i = 0;
-	let wrap_logic = raw.len() > max_width || raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0;
-	let wrap_plus = raw.len() > max_width || raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0;
+	let normalized = whitespace::normalize_inline_ws(raw);
+	let wrap_logic = normalized.len() > max_width || raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0;
+	let wrap_plus = normalized.len() > max_width || raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0;
 	let is_nested = is_nested_block_condition(node);
 	let indent_size = if wrap_logic && is_block_condition(node) {
 		tab_width * 2
@@ -2216,7 +2221,7 @@ fn doc_binary_expression(node) {
 	let parent = node.parent();
 	let parent_is_ternary = parent != () && parent.kind_id() == kinds::ternary_expression;
 	let in_ternary = parent_is_ternary || has_ancestor_kind(node, kinds::ternary_expression);
-	let allow_logic_wrap = wrap_logic && !in_ternary && (is_block_condition(node) || is_nested);
+	let allow_logic_wrap = wrap_logic && !in_ternary;
 	let in_args = has_ancestor_kind(node, kinds::arguments);
 	let allow_plus_wrap = wrap_plus && in_args && is_string_concat_in_args(node);
 	if allow_logic_wrap {
@@ -2445,7 +2450,8 @@ fn doc_ternary_expression(node) {
 	};
 	let raw = text(node);
 	let normalized = whitespace::normalize_inline_ws(raw);
-	let should_break = prefix_cols + cond_raw.len() > max_width || logical_ops >= 3 || normalized.len() > max_width;
+	let cond_norm_len = whitespace::normalize_inline_ws(cond_raw).len();
+	let should_break = logical_ops >= 3 || cond_norm_len > max_width || normalized.len() > max_width;
 	let cond_doc = if cond_node != () && cond_node.kind_id() == kinds::binary_expression {
 		let force_wrap_ternary_condition = true;
 		let force_wrap = should_break && force_wrap_ternary_condition;

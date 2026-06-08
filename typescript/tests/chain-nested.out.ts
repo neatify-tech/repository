@@ -1,6 +1,5 @@
 const result = client.getVeryLongService()
-	.withConfig(builder
-		.createLongBuilder()
+	.withConfig(builder.createLongBuilder()
 		.withFirstOption(firstValue)
 		.withSecondOption(secondValue)
 		.build())

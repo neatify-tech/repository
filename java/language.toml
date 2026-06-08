@@ -1,6 +1,5 @@
 name = "java"
 version = "0.1.0"
-formatter = "java/formatter.rhai"
 fragment-marker = "/* {marker} */"
 
 # Grammar source: https://github.com/tree-sitter/tree-sitter-java
@@ -12,3 +11,7 @@ extensions = [".java"]
 [treesitter]
 language = "java"
 binary = "treesitter/{os}/{arch}/java.{ext}"
+
+[pipeline]
+format = "java/formatter.rhai"
+lgpl3 = "java/lgpl3.rhai"
