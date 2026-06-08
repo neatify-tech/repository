@@ -1712,6 +1712,55 @@ fn doc_arguments(node) {
 	let raw = slice(byte_range(node));
 	let normalized = whitespace::normalize_inline_ws(raw);
 	let should_break = normalized.len() > max_width || has_block_arg;
+	if !should_break {
+		let parent_call = node.parent();
+		if parent_call != () && parent_call.kind_id() == kinds::call_expression {
+			let parent = parent_call.parent();
+			let parent_kind = if parent != () { parent.kind_id() } else { -1 };
+			let should_measure = parent_kind == kinds::expression_statement || parent_kind == kinds::variable_declarator || parent_kind == kinds::assignment_expression || parent_kind == kinds::return_statement || parent_kind == kinds::arrow_function;
+			if should_measure {
+				let skip_call_len = false;
+				let callee = ();
+				let i = 0;
+				while i < parent_call.len {
+					let k = parent_call.kind(i);
+					if k != kinds::arguments {
+						callee = parent_call.child(i);
+						break;
+					}
+					i += 1;
+				}
+				if callee != () && callee.kind_id() == kinds::member_expression {
+					skip_call_len = true;
+				}
+				if !skip_call_len {
+					let call_norm = whitespace::normalize_inline_ws(text(parent_call));
+					if call_norm.len() > max_width {
+						should_break = true;
+					}
+					else {
+						let in_block = has_ancestor_kind(parent_call, kinds::statement_block);
+						if !in_block {
+							let tab_width = configuration::values["tab_width"];
+							let r = byte_range(parent_call);
+							let line_info = line_at(start(r));
+							let line_start = start_offset(line_info);
+							let prefix = if start(r) > line_start {
+								slice(range(line_start, start(r)))
+							}
+							else {
+								""
+							};
+							let prefix_cols = whitespace::text_cols(prefix, tab_width);
+							if prefix_cols + call_norm.len() > max_width {
+								should_break = true;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 	let parts = [];
 	let j = 0;
 	while j < args.len() {
@@ -1728,6 +1777,39 @@ fn doc_arguments(node) {
 		j += 1;
 	}
 	if should_break {
+		if args.len() == 1 {
+			let only_arg = arg_nodes[0];
+			if only_arg != () {
+				if only_arg.kind_id() == kinds::object {
+					return doc_concat_list([doc_text("("), args[0], doc_text(")")]);
+				}
+				let ok = only_arg.kind_id() == kinds::arrow_function || only_arg.kind_id() == kinds::function_expression;
+				if ok && !has_block_arg {
+					return doc_concat_list([doc_text("("), args[0], doc_text(")")]);
+				}
+				if has_block_arg && (only_arg.kind_id() == kinds::arrow_function || only_arg.kind_id() == kinds::function_expression) {
+					let parent_call = node.parent();
+					let callee_is_member = false;
+					if parent_call != () && parent_call.kind_id() == kinds::call_expression {
+						let i = 0;
+						while i < parent_call.len {
+							let k = parent_call.kind(i);
+							if k != kinds::arguments {
+								let callee = parent_call.child(i);
+								callee_is_member = callee != () && callee.kind_id() == kinds::member_expression;
+								break;
+							}
+							i += 1;
+						}
+					}
+					if callee_is_member {
+						let indent_size = configuration::values["tab_width"];
+						return doc_concat_list([doc_text("("), doc_indent(indent_size, args[0]), doc_text(")")]);
+					}
+					return doc_concat_list([doc_text("("), args[0], doc_text(")")]);
+				}
+			}
+		}
 		let indent_size = configuration::values["tab_width"];
 		let extra_indent = {
 			let add = 0;
