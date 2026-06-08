@@ -295,17 +295,25 @@ fn doc_element(node) {
 	let max_width = configuration::values["max_width"];
 	let tag_name = tag_name;
 	let inline_allowed = inline_container_tag(tag_name);
-	let allow_inline_newlines = inline_allowed;
+	let allow_inline_newlines = inline_allowed && content.len() == 1;
 	let content_raw = raw;
 	if content.len() > 0 {
 		let first_r = node.range(content[0]);
 		let last_r = node.range(content[content.len() - 1]);
 		content_raw = slice(range(start(first_r), end(last_r)));
 	}
-	let normalized = whitespace::normalize_inline_ws(content_raw);
+	let normalized = ();
+	let fits = false;
+	let has_fits = false;
 	let no_newlines = allow_inline_newlines || (content_raw.index_of("\n") < 0 && content_raw.index_of("\r") < 0);
-	let fits = normalized.len() <= max_width;
 	let inline_ok = false;
+	if inline_allowed && no_newlines {
+		if !has_fits {
+			normalized = whitespace::normalize_inline_ws(content_raw);
+			fits = normalized.len() <= max_width;
+			has_fits = true;
+		}
+	}
 	if inline_allowed && no_newlines && fits {
 		let j = 0;
 		let all_inline = true;
@@ -326,6 +334,11 @@ fn doc_element(node) {
 			-1
 		};
 		let inline_allowed = inline_kind == k_text || inline_kind == k_raw || inline_kind == kinds::interpolation || ((inline_kind == k_element || inline_kind == k_component || inline_kind == k_template) && inline_container_tag(tag_name));
+		if inline_allowed && no_newlines && !has_fits {
+			normalized = whitespace::normalize_inline_ws(content_raw);
+			fits = normalized.len() <= max_width;
+			has_fits = true;
+		}
 		inline_ok = content.len() == 1 && inline_allowed && no_newlines && fits;
 	}
 	let simple_inline = false;
@@ -346,6 +359,11 @@ fn doc_element(node) {
 				break;
 			}
 			j += 1;
+		}
+		if all_simple && !has_fits {
+			normalized = whitespace::normalize_inline_ws(content_raw);
+			fits = normalized.len() <= max_width;
+			has_fits = true;
 		}
 		simple_inline = all_simple && fits;
 	}
