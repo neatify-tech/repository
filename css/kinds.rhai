@@ -17,9 +17,15 @@ const map = kind_ids_map(
 		"import_statement",
 		"charset_statement",
 		"namespace_statement",
-		"postcss_statement"
+		"postcss_statement",
+		"call_expression",
+		"function_name",
+		"arguments"
 	],
 	[
+		true,
+		true,
+		true,
 		true,
 		true,
 		true,
@@ -57,3 +63,6 @@ export const import_statement = kind_id("css", "import_statement", true);
 export const charset_statement = kind_id("css", "charset_statement", true);
 export const namespace_statement = kind_id("css", "namespace_statement", true);
 export const postcss_statement = kind_id("css", "postcss_statement", true);
+export const call_expression = kind_id("css", "call_expression", true);
+export const function_name = kind_id("css", "function_name", true);
+export const arguments = kind_id("css", "arguments", true);

@@ -425,6 +425,55 @@ fn doc_at_rule(node, block_kind_id) {
 	}
 	if block_idx < 0 {
 		let raw = trim(slice(byte_range(node)));
+		let call_node = ();
+		let kids = node.children();
+		if kids != () {
+			let j = 0;
+			while j < kids.len() {
+				let child = kids[j];
+				if child != () && child.kind_id() == kinds::call_expression {
+					call_node = child;
+					break;
+				}
+				j += 1;
+			}
+		}
+		if call_node != () {
+			let name_node = ();
+			let args_node = ();
+			let call_kids = call_node.children();
+			if call_kids != () {
+				let j = 0;
+				while j < call_kids.len() {
+					let child = call_kids[j];
+					if child != () {
+						let ck = child.kind_id();
+						if ck == kinds::function_name {
+							name_node = child;
+						}
+						else if ck == kinds::arguments {
+							args_node = child;
+						}
+					}
+					j += 1;
+				}
+			}
+			if name_node != () && args_node != () {
+				let prefix = trim(slice(range(start(byte_range(node)), start(byte_range(name_node)))));
+				let prefix_norm = normalize_css_text(prefix, true, true, true);
+				let call_text = slice(byte_range(name_node)) + slice(byte_range(args_node));
+				let normalized = if prefix_norm == "" {
+					call_text
+				}
+				else {
+					prefix_norm + " " + call_text
+				};
+				if normalized.ends_with(";") {
+					return doc_text(normalized);
+				}
+				return doc_text(normalized + ";");
+			}
+		}
 		let normalized = normalize_css_text(raw, true, true, true);
 		if normalized.ends_with(";") {
 			return doc_text(normalized);
