@@ -2223,7 +2223,7 @@ fn doc_binary_expression(node) {
 	let in_ternary = parent_is_ternary || has_ancestor_kind(node, kinds::ternary_expression);
 	let allow_logic_wrap = wrap_logic && !in_ternary;
 	let in_args = has_ancestor_kind(node, kinds::arguments);
-	let allow_plus_wrap = wrap_plus && in_args && is_string_concat_in_args(node);
+	let allow_plus_wrap = wrap_plus && (!in_ternary || is_string_concat_in_args(node)) && (!in_args || is_string_concat_in_args(node));
 	if allow_logic_wrap {
 		let kids = node.children();
 		let has_logical = false;
