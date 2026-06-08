@@ -5,17 +5,17 @@
 	</div>
 </template>
 <script scoped>
-	const title = "Hello"
+const title = "Hello"
 </script>
 <style>
-	.card {
-		display: grid;
-		gap: 12px;
-	}
+.card {
+	display: grid;
+	gap: 12px;
+}
 
-	@media (min-width: 900px) {
-		.card {
-			grid-template-columns: 1fr 2fr;
-		}
+@media (min-width: 900px) {
+	.card {
+		grid-template-columns: 1fr 2fr;
 	}
+}
 </style>

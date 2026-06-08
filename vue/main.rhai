@@ -534,10 +534,10 @@ fn doc_script_style(node, language) {
 	if raw_doc == () {
 		raw_doc = doc_range(start(raw_range), end(raw_range));
 	}
-	let indent_size = configuration::values["tab_width"];
 	doc_concat_list([
 		start_doc,
-		doc_indent(indent_size, doc_concat_list([doc_hardline(), raw_doc])),
+		doc_hardline(),
+		raw_doc,
 		doc_hardline(),
 		end_doc
 	])
