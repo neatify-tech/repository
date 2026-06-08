@@ -309,6 +309,7 @@ fn doc_declaration(node) {
 
 fn doc_block(node) {
 	let items = [];
+	let item_kinds = [];
 	let allowed = [
 		kinds::declaration,
 		kinds::rule_set,
@@ -336,6 +337,7 @@ fn doc_block(node) {
 		}
 		if allowed_item {
 			items.push(doc_for_child(node, i));
+			item_kinds.push(k);
 		}
 		i += 1;
 	}
@@ -512,6 +514,7 @@ fn doc_rule_set(node) {
 
 fn doc_stylesheet(node) {
 	let items = [];
+	let item_kinds = [];
 	let allowed = [
 		kinds::rule_set,
 		kinds::at_rule,
@@ -539,6 +542,7 @@ fn doc_stylesheet(node) {
 		}
 		if allowed_item {
 			items.push(doc_for_child(node, i));
+			item_kinds.push(k);
 		}
 		i += 1;
 	}
@@ -550,8 +554,12 @@ fn doc_stylesheet(node) {
 	while i < items.len() {
 		joined.push(items[i]);
 		if i < items.len() - 1 {
+			let is_import = item_kinds[i] == kinds::import_statement;
+			let next_is_import = item_kinds[i + 1] == kinds::import_statement;
 			joined.push(doc_hardline());
-			joined.push(doc_hardline());
+			if !(is_import && next_is_import) {
+				joined.push(doc_hardline());
+			}
 		}
 		i += 1;
 	}
