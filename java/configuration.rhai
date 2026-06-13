@@ -7,5 +7,6 @@ const VALUES = #{
 	"wrap_str": setting("wrap_str", 1),
 	"profile": setting("profile", false),
 	"switch_break_align": setting("switch_break_align", true),
+	"force_single_line_if_block": setting("force_single_line_if_block", true),
 };
 export VALUES as values;

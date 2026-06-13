@@ -142,6 +142,7 @@ fn first_line_text(raw) {
 	}
 }
 
+
 fn normalize_generic_text(raw) {
 	let out = "";
 	let i = 0;
@@ -537,7 +538,8 @@ fn root_wrap_should_wrap(node) {
 		return false;
 	}
 	let max_width = configuration::values["max_width"];
-	let normalized = whitespace::normalize_inline_ws(text(node));
+	let raw = text(node);
+	let normalized = whitespace::normalize_inline_ws(raw);
 	if normalized.len() > max_width || node_is_multiline(node) {
 		return true;
 	}
@@ -1232,8 +1234,9 @@ fn doc_operator_expression_inner(node, allow_chain_split) {
 	let head = [];
 	let tail = [];
 	let i = 0;
-	let normalized = whitespace::normalize_inline_ws(text(node));
-	let wrap_plus = normalized.len() > max_width || node_is_multiline(node);
+	let raw = text(node);
+	let normalized = whitespace::normalize_inline_ws(raw);
+	let wrap_plus = normalized.len() > max_width;
 	let wrap_logic = normalized.len() > max_width || node_is_multiline(node);
 	let indent_size = if wrap_logic && is_block_condition(node) {
 		tab_width * 2
@@ -1246,7 +1249,9 @@ fn doc_operator_expression_inner(node, allow_chain_split) {
 	let in_ternary = parent_is_ternary || has_ancestor_kind(node, kinds::ternary_expression);
 	let allow_logic_wrap = wrap_logic && !in_ternary;
 	let in_args = has_ancestor_kind(node, kinds::argument_list);
-	let allow_plus_wrap = wrap_plus && (!in_ternary || is_string_concat_in_args(node)) && (!in_args || is_string_concat_in_args(node));
+	let is_string_concat = is_string_concat_in_args(node);
+	let preserve_plus_wrap = is_string_concat && (raw.index_of("\n") >= 0 || raw.index_of("\r") >= 0);
+	let allow_plus_wrap = (wrap_plus || preserve_plus_wrap) && (!in_ternary || is_string_concat) && (!in_args || is_string_concat);
 	if allow_logic_wrap && allow_chain_split && node.kind_id() == kinds::binary_expression {
 		let kids = node.children();
 		let has_logical = false;
@@ -1268,14 +1273,40 @@ fn doc_operator_expression_inner(node, allow_chain_split) {
 			return doc_for_boolean_expression(node, true, indent_size, false);
 		}
 	}
+	if allow_plus_wrap && node.kind_id() == kinds::binary_expression {
+		return doc_string_concat_chain(node, max_width, preserve_plus_wrap);
+	}
 	let wrapped = false;
+	let line_start_pos = start(byte_range(node));
 	while i < node.len {
 		let k = node.kind(i);
 		if op_ids.index_of(k) >= 0 {
 			let op_text = slice(node.range(i)).trim();
-			let should_wrap_op = (allow_plus_wrap && op_text == "+") || (allow_logic_wrap && (op_text == "&&" || op_text == "||" || op_text == "&" || op_text == "|" || op_text == "^"));
+			let should_wrap_op = allow_logic_wrap && (op_text == "&&" || op_text == "||" || op_text == "&" || op_text == "|" || op_text == "^");
+			if allow_plus_wrap && op_text == "+" {
+				let next_idx = -1;
+				let j = i + 1;
+				while j < node.len {
+					let nk = node.kind(j);
+					if op_ids.index_of(nk) < 0 {
+						next_idx = j;
+						break;
+					}
+					j += 1;
+				}
+				let end_pos = if next_idx >= 0 {
+					end(node.range(next_idx))
+				}
+				else {
+					end(node.range(i))
+				};
+				let prefix_range = range(line_start_pos, end_pos);
+				let prefix_len = whitespace::normalize_inline_ws(slice(prefix_range)).len();
+				should_wrap_op = prefix_len > max_width;
+			}
 			if should_wrap_op {
 				wrapped = true;
+				line_start_pos = start(node.range(i));
 				tail.push(doc_hardline());
 				tail.push(doc_text(op_text));
 				tail.push(doc_text(" "));
@@ -1312,6 +1343,218 @@ fn doc_operator_expression_inner(node, allow_chain_split) {
 		);
 	}
 	doc_concat_list(head)
+}
+
+fn doc_string_concat_chain(node, max_width, preserve_multiline) {
+	let operands = flatten_plus_operands(node);
+	if operands.len() <= 1 {
+		return doc_for_child(node, 0);
+	}
+	let tab_width = configuration::values["tab_width"];
+	let docs = [];
+	let lengths = [];
+	let is_short_literal = [];
+	let rows = [];
+	let i = 0;
+	while i < operands.len() {
+		let operand = operands[i];
+		let doc = doc_for_node(operand);
+		if doc == () {
+			let r = byte_range(operand);
+			doc = doc_range(start(r), end(r));
+		}
+		docs.push(doc);
+		let raw = slice(byte_range(operand));
+		let len = whitespace::normalize_inline_ws(raw).len();
+		lengths.push(len);
+		let k = operand.kind_id();
+		let short_lit = k == kinds::string_literal && len <= 4;
+		is_short_literal.push(short_lit);
+		let pos = start_position(operand);
+		rows.push(row(pos));
+		i += 1;
+	}
+	if preserve_multiline {
+		let lines = [[0]];
+		let line_lens = [lengths[0]];
+		let last_row = rows[0];
+		let i = 1;
+		while i < rows.len() {
+			if rows[i] == last_row {
+				lines[lines.len() - 1].push(i);
+				line_lens[line_lens.len() - 1] = line_lens[line_lens.len() - 1] + 3 + lengths[i];
+			}
+			else {
+				lines.push([i]);
+				line_lens.push(lengths[i]);
+				last_row = rows[i];
+			}
+			i += 1;
+		}
+		let can_preserve = true;
+		let li = 0;
+		while li < line_lens.len() {
+			if line_lens[li] > max_width {
+				can_preserve = false;
+				break;
+			}
+			li += 1;
+		}
+		if can_preserve {
+			let out = [];
+			let first_line = lines[0];
+			let k = 0;
+			while k < first_line.len() {
+				let idx = first_line[k];
+				if k > 0 {
+					out.push(doc_text(" + "));
+				}
+				out.push(docs[idx]);
+				k += 1;
+			}
+			if lines.len() == 1 {
+				return doc_concat_list(out);
+			}
+			let rest = [];
+			li = 1;
+			while li < lines.len() {
+				rest.push(doc_hardline());
+				rest.push(doc_text("+ "));
+				let line = lines[li];
+				let m = 0;
+				while m < line.len() {
+					let idx = line[m];
+					if m > 0 {
+						rest.push(doc_text(" + "));
+					}
+					rest.push(docs[idx]);
+					m += 1;
+				}
+				li += 1;
+			}
+			return doc_concat_list([doc_concat_list(out), doc_indent(tab_width, doc_concat_list(rest))]);
+		}
+	}
+	let lines = [[0]];
+	let line_lens = [lengths[0]];
+	let j = 1;
+	while j < docs.len() {
+		let next_len = lengths[j];
+		let line_idx = lines.len() - 1;
+		let current_len = line_lens[line_idx];
+		let next_total = current_len + 3 + next_len;
+		if next_total <= max_width {
+			lines[line_idx].push(j);
+			line_lens[line_idx] = next_total;
+		}
+		else if is_short_literal[j] && lines[line_idx].len() > 1 {
+			let last_idx = lines[line_idx].pop();
+			line_lens[line_idx] = line_lens[line_idx] - (3 + lengths[last_idx]);
+			lines.push([last_idx]);
+			line_lens.push(lengths[last_idx]);
+			let new_line_idx = lines.len() - 1;
+			let new_total = line_lens[new_line_idx] + 3 + next_len;
+			if new_total <= max_width {
+				lines[new_line_idx].push(j);
+				line_lens[new_line_idx] = new_total;
+			}
+			else {
+				lines.push([j]);
+				line_lens.push(next_len);
+			}
+		}
+		else {
+			lines.push([j]);
+			line_lens.push(next_len);
+		}
+		j += 1;
+	}
+	let out = [];
+	let first_line = lines[0];
+	let k = 0;
+	while k < first_line.len() {
+		let idx = first_line[k];
+		if k > 0 {
+			out.push(doc_text(" + "));
+		}
+		out.push(docs[idx]);
+		k += 1;
+	}
+	if lines.len() == 1 {
+		return doc_concat_list(out);
+	}
+	let rest = [];
+	let li = 1;
+	while li < lines.len() {
+		rest.push(doc_hardline());
+		rest.push(doc_text("+ "));
+		let line = lines[li];
+		let m = 0;
+		while m < line.len() {
+			let idx = line[m];
+			if m > 0 {
+				rest.push(doc_text(" + "));
+			}
+			rest.push(docs[idx]);
+			m += 1;
+		}
+		li += 1;
+	}
+	doc_concat_list([doc_concat_list(out), doc_indent(tab_width, doc_concat_list(rest))])
+}
+
+fn flatten_plus_operands(node) {
+	let out = [];
+	if node == () {
+		return out;
+	}
+	let kids = children(node);
+	if kids == () || kids.len() == 0 {
+		out.push(node);
+		return out;
+	}
+	let op_idx = -1;
+	let left = ();
+	let right = ();
+	let last_non_op = ();
+	let i = 0;
+	while i < kids.len() {
+		let child = kids[i];
+		if child != () {
+			let ck = child.kind_id();
+			if ck == kinds::plus {
+				op_idx = i;
+				left = last_non_op;
+			}
+			else if op_idx < 0 {
+				last_non_op = child;
+			}
+			else if right == () {
+				right = child;
+				break;
+			}
+		}
+		i += 1;
+	}
+	if op_idx < 0 || left == () || right == () {
+		out.push(node);
+		return out;
+	}
+	if left.kind_id() == kinds::binary_expression {
+		let left_parts = flatten_plus_operands(left);
+		out.append(left_parts);
+	}
+	else {
+		out.push(left);
+	}
+	if right.kind_id() == kinds::binary_expression {
+		let right_parts = flatten_plus_operands(right);
+		out.append(right_parts);
+	}
+	else {
+		out.push(right);
+	}
+	out
 }
 
 fn is_string_concat_in_args(node) {
@@ -4045,7 +4288,7 @@ let tab_width = configuration::values["tab_width"];
 let output = doc_render_with_indent(root_doc, width, indent_style, tab_width);
 let lines = output.split("\n");
 let i = 0;
-let base_tabs = -1;
+let base_cols = -1;
 let empty = "";
 while i < lines.len() {
 	let line = lines[i];
@@ -4054,26 +4297,29 @@ while i < lines.len() {
 		lines[i] = empty;
 	}
 	else {
-		let tabs = 0;
-		while tabs < line.len() {
-			let ch = line.sub_string(tabs, 1);
-			if ch == "\t" {
-				tabs += 1;
-			}
-			else {
-				break;
-			}
+		let ws_len = whitespace::leading_ws_len(line);
+		let prefix = if ws_len > 0 {
+			line.sub_string(0, ws_len)
 		}
-		let trimmed = line.sub_string(tabs, line.len() - tabs);
+		else {
+			""
+		};
+		let cols = if ws_len > 0 {
+			whitespace::indent_cols_from_prefix(prefix, tab_width)
+		}
+		else {
+			0
+		};
+		let trimmed = line.sub_string(ws_len, line.len() - ws_len);
 		if trimmed.starts_with(".") || trimmed.starts_with("//") {
-			if base_tabs >= 0 && tabs > base_tabs + 1 {
-				let new_tabs = base_tabs + 1;
-				lines[i] = whitespace::repeat_str("\t", new_tabs) + trimmed;
-				tabs = new_tabs;
+			if base_cols >= 0 && cols > base_cols + tab_width {
+				let new_cols = base_cols + tab_width;
+				lines[i] = whitespace::indent_string_from_cols(new_cols) + trimmed;
+				cols = new_cols;
 			}
 		}
 		else {
-			base_tabs = tabs;
+			base_cols = cols;
 		}
 	}
 	i += 1;

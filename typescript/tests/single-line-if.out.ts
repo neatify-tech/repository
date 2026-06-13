@@ -1,0 +1,3 @@
+if (!rel) {
+	return root;
+}

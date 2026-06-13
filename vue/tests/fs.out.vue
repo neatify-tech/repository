@@ -124,30 +124,30 @@ const visiblePaths = ref<Set<string> | null>(null);
 const hasVisibleChildPaths = ref<Set<string>>(new Set());
 let searchTimer: number | undefined;
 const filterActive = computed(() => query.value.trim().length > 0);
-const currentRootLabel = computed(
-	() => {
-		if (!currentRoot.value) return "";
-		const rootEntry = roots.value.find((root) => root.path === currentRoot.value);
-		if (!rootEntry) return currentRoot.value;
-		return rootEntry.default ? `${rootEntry.path} (default)` : rootEntry.path;
+const currentRootLabel = computed(() => {
+	if (!currentRoot.value) {
+		return "";
 	}
-);
-const treeSummary = computed(
-	() => {
-		const count = countNodes(treeNodes.value);
-		return `${count.files} file${count.files === 1 ? "" : "s"}, ${count.dirs} folder${
-			count.dirs === 1 ? "" : "s"
-		}`;
+	const rootEntry = roots.value.find((root) => root.path === currentRoot.value);
+	if (!rootEntry) {
+		return currentRoot.value;
 	}
-);
-const searchSummary = computed(
-	() => {
-		if (!filterActive.value) return "";
-		const matches = matchPaths.value.size;
-		const label = searchMode.value === "content" ? "content" : "name";
-		return `${matches} match${matches === 1 ? "" : "es"} (${label})`;
+	return rootEntry.default ? `${rootEntry.path} (default)` : rootEntry.path;
+});
+const treeSummary = computed(() => {
+	const count = countNodes(treeNodes.value);
+	return `${count.files} file${count.files === 1 ? "" : "s"}, ${count.dirs} folder${
+		count.dirs === 1 ? "" : "s"
+	}`;
+});
+const searchSummary = computed(() => {
+	if (!filterActive.value) {
+		return "";
 	}
-);
+	const matches = matchPaths.value.size;
+	const label = searchMode.value === "content" ? "content" : "name";
+	return `${matches} match${matches === 1 ? "" : "es"} (${label})`;
+});
 function ensureMcp(): (method: string, params: Record<string, unknown>) => Promise<any> {
 	const mcp = (window as unknown as { mcp?: { callTool?: any } }).mcp;
 	if (!mcp?.callTool) {
@@ -167,10 +167,18 @@ async function callTool(name: string, argumentsParam: Record<string, unknown> = 
 	return result;
 }
 function resolvePath(root: string, rel: string) {
-	if (!rel) return root;
-	if (rel.startsWith("/")) return rel;
-	if (root === "." || root === "") return rel;
-	if (root.endsWith("/")) return `${root}${rel}`;
+	if (!rel) {
+		return root;
+	}
+	if (rel.startsWith("/")) {
+		return rel;
+	}
+	if (root === "." || root === "") {
+		return rel;
+	}
+	if (root.endsWith("/")) {
+		return `${root}${rel}`;
+	}
 	return `${root}/${rel}`;
 }
 function normalizeEntry(entry: string) {
@@ -186,7 +194,9 @@ function buildTree(matches: string[]) {
 	const getNode = (path: string, name: string, isDir: boolean) => {
 		const key = `${path}|${isDir ? "dir" : "file"}`;
 		const existing = nodes.get(key);
-		if (existing) return existing;
+		if (existing) {
+			return existing;
+		}
 		const node: TreeNode = {
 			name,
 			path,
@@ -198,47 +208,49 @@ function buildTree(matches: string[]) {
 		return node;
 	};
 	matches.map(normalizeEntry)
-		.forEach(
-			({ path, isDir }) => {
-				if (!path) return;
-				const parts = path.split("/");
-				let currentPath = "";
-				let parentNode: TreeNode | null = null;
-				parts.forEach(
-					(segment, index) => {
-						currentPath = currentPath ? `${currentPath}/${segment}` : segment;
-						const isLeaf = index === parts.length - 1;
-						const nodeIsDir = isLeaf ? isDir : true;
-						const node = getNode(currentPath, segment, nodeIsDir);
-						if (parentNode && !parentNode.children.includes(node)) {
-							parentNode.children.push(node);
-						}
-						if (!parentNode && !rootsOut.includes(node)) {
-							rootsOut.push(node);
-						}
-						parentNode = node;
-					}
-				);
+		.forEach(({ path, isDir }) => {
+			if (!path) {
+				return;
 			}
-		);
+			const parts = path.split("/");
+			let currentPath = "";
+			let parentNode: TreeNode | null = null;
+			parts.forEach((segment, index) => {
+					currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+					const isLeaf = index === parts.length - 1;
+					const nodeIsDir = isLeaf ? isDir : true;
+					const node = getNode(currentPath, segment, nodeIsDir);
+					if (parentNode && !parentNode.children.includes(node)) {
+						parentNode.children.push(node);
+					}
+					if (!parentNode && !rootsOut.includes(node)) {
+						rootsOut.push(node);
+					}
+					parentNode = node;
+				});
+		});
 	const sortTree = (node: TreeNode) => {
 		node.children
-			.sort(
-				(a, b) => {
-					if (a.isDir && !b.isDir) return -1;
-					if (!a.isDir && b.isDir) return 1;
-					return a.name.localeCompare(b.name);
+			.sort((a, b) => {
+				if (a.isDir && !b.isDir) {
+					return -1;
 				}
-			);
+				if (!a.isDir && b.isDir) {
+					return 1;
+				}
+				return a.name.localeCompare(b.name);
+			});
 		node.children.forEach(sortTree);
 	};
-	rootsOut.sort(
-		(a, b) => {
-			if (a.isDir && !b.isDir) return -1;
-			if (!a.isDir && b.isDir) return 1;
+	rootsOut.sort((a, b) => {
+			if (a.isDir && !b.isDir) {
+				return -1;
+			}
+			if (!a.isDir && b.isDir) {
+				return 1;
+			}
 			return a.name.localeCompare(b.name);
-		}
-	);
+		});
 	rootsOut.forEach(sortTree);
 	treeNodes.value = rootsOut;
 	updateVisibility();
@@ -275,13 +287,11 @@ function updateVisibility() {
 	const mark = (node: TreeNode): boolean => {
 		let isVisibleNode = matches.has(node.path);
 		let childVisible = false;
-		node.children.forEach(
-			(child) => {
+		node.children.forEach((child) => {
 				if (mark(child)) {
 					childVisible = true;
 				}
-			}
-		);
+			});
 		if (childVisible) {
 			hasVisibleChild.add(node.path);
 		}
@@ -295,24 +305,36 @@ function updateVisibility() {
 	hasVisibleChildPaths.value = hasVisibleChild;
 }
 function isVisible(node: TreeNode) {
-	if (!filterActive.value) return true;
+	if (!filterActive.value) {
+		return true;
+	}
 	return visiblePaths.value?.has(node.path) ?? false;
 }
 function isMatched(node: TreeNode) {
-	if (!filterActive.value) return false;
+	if (!filterActive.value) {
+		return false;
+	}
 	return matchPaths.value.has(node.path);
 }
 function isExpanded(node: TreeNode) {
-	if (!filterActive.value) return node.expanded;
-	if (hasVisibleChildPaths.value.has(node.path)) return true;
+	if (!filterActive.value) {
+		return node.expanded;
+	}
+	if (hasVisibleChildPaths.value.has(node.path)) {
+		return true;
+	}
 	return node.expanded;
 }
 function toggleNode(node: TreeNode) {
-	if (!node.isDir) return;
+	if (!node.isDir) {
+		return;
+	}
 	node.expanded = !node.expanded;
 }
 async function openFile(node: TreeNode) {
-	if (node.isDir) return;
+	if (node.isDir) {
+		return;
+	}
 	previewLoading.value = true;
 	previewError.value = "";
 	selectedPath.value = node.path;
@@ -334,7 +356,9 @@ function stripLineNumbers(content: string) {
 	return content.split("\n").map((line) => line.replace(/^\d+:\s?/, "")).join("\n");
 }
 async function copyToClipboard() {
-	if (!selectedPath.value) return;
+	if (!selectedPath.value) {
+		return;
+	}
 	copyLabel.value = "Copying…";
 	try {
 		const absolutePath = resolvePath(currentRoot.value, selectedPath.value);
@@ -379,7 +403,9 @@ async function loadRoots() {
 	currentRoot.value = defaultRoot || items[0]?.path || ".";
 }
 async function loadTree() {
-	if (!currentRoot.value) return;
+	if (!currentRoot.value) {
+		return;
+	}
 	loading.value = true;
 	error.value = "";
 	try {
@@ -444,7 +470,9 @@ function queueSearch() {
 	);
 }
 function setSearchMode(mode: SearchMode) {
-	if (searchMode.value === mode) return;
+	if (searchMode.value === mode) {
+		return;
+	}
 	searchMode.value = mode;
 	if (query.value.trim()) {
 		runSearch();
@@ -463,15 +491,13 @@ async function handleRootChange() {
 	query.value = "";
 	await loadTree();
 }
-onMounted(
-	async() => {
-		try {
-			await loadRoots();
-			await loadTree();
-		}
-		catch (err) {
-			error.value = err instanceof Error ? err.message : "Failed to initialize";
-		}
+onMounted(async() => {
+	try {
+		await loadRoots();
+		await loadTree();
 	}
-);
+	catch (err) {
+		error.value = err instanceof Error ? err.message : "Failed to initialize";
+	}
+});
 </script>

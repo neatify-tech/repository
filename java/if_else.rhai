@@ -92,13 +92,14 @@ fn doc_if_statement(node) {
 			}
 		}
 	}
+	let force_block = configuration::values["force_single_line_if_block"];
 	let then_doc = if then_idx < 0 {
 		doc_text("")
 	}
 	else if node.kind(then_idx) == k_block {
 		doc_for_child(node, then_idx)
 	}
-	else {
+	else if force_block {
 		let body = slice(node.range(then_idx)).trim();
 		let indent_size = configuration::values["tab_width"];
 		doc_concat_list([
@@ -107,6 +108,9 @@ fn doc_if_statement(node) {
 			doc_hardline(),
 			doc_text("}")
 		])
+	}
+	else {
+		doc_for_child(node, then_idx)
 	};
 	let base = doc_concat_list(
 		[
@@ -159,7 +163,7 @@ fn doc_if_statement(node) {
 	else if node.kind(else_idx) == k_block {
 		doc_for_child(node, else_idx)
 	}
-	else {
+	else if force_block {
 		let body = slice(node.range(else_idx)).trim();
 		let indent_size = configuration::values["tab_width"];
 		doc_concat_list([
@@ -168,6 +172,9 @@ fn doc_if_statement(node) {
 			doc_hardline(),
 			doc_text("}")
 		])
+	}
+	else {
+		doc_for_child(node, else_idx)
 	};
 	doc_concat_list([
 		base,
